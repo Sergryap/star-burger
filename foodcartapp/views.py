@@ -1,5 +1,8 @@
+import json
+
 from django.http import JsonResponse
 from django.templatetags.static import static
+from pprint import pprint
 
 
 from .models import Product
@@ -58,5 +61,19 @@ def product_list_api(request):
 
 
 def register_order(request):
-    # TODO это лишь заглушка
-    return JsonResponse({})
+    try:
+        data = json.loads(request.body)
+
+        pprint({
+            'products': data['products'],
+            'firstname': data['firstname'],
+            'lastname': data['lastname'],
+            'phonenumber': data['phonenumber'],
+            'address': data['address'],
+        })
+
+    except ValueError:
+        return JsonResponse({
+            'error': 'Данные не отправлены',
+        })
+    return JsonResponse(data)
