@@ -4,8 +4,7 @@ from django.http import JsonResponse
 from django.templatetags.static import static
 from pprint import pprint
 
-
-from .models import Product
+from .models import Product, Order, OrderPosition
 
 
 def banners_list_api(request):
@@ -62,18 +61,24 @@ def product_list_api(request):
 
 def register_order(request):
     try:
-        data = json.loads(request.body)
+        order_data = json.loads(request.body)
+        order = Order.objects.create(
+            phonenumber=order_data['phonenumber'],
+            address=order_data['address'],
+            firstname=order_data['firstname'],
+            lastname=order_data['lastname'],
+        )
 
-        pprint({
-            'products': data['products'],
-            'firstname': data['firstname'],
-            'lastname': data['lastname'],
-            'phonenumber': data['phonenumber'],
-            'address': data['address'],
-        })
+        for position in order_data['products']:
+            product = Product.objects.get(pk=position['product'])
+            OrderPosition.objects.create(
+                product=product,
+                order=order,
+                quantity=position['quantity'],
+            )
 
     except ValueError:
         return JsonResponse({
             'error': 'Данные не отправлены',
         })
-    return JsonResponse(data)
+    return JsonResponse(order_data)

@@ -125,17 +125,67 @@ class RestaurantMenuItem(models.Model):
 
 
 class Order(models.Model):
-    phonenumber = PhoneNumberField(null=True, db_index=True)
-    address = models.CharField(max_length=255, null=True)
-    firstname = models.CharField(max_length=50)
-    lastname = models.CharField(max_length=50)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    products = models.ManyToManyField(Product, related_name='orders', through='OrderPosition')
+    phonenumber = PhoneNumberField(
+        db_index=True,
+        verbose_name='телефон'
+    )
+    address = models.CharField(
+        max_length=255,
+        verbose_name='адрес'
+    )
+    firstname = models.CharField(
+        max_length=50,
+        verbose_name='имя'
+    )
+    lastname = models.CharField(
+        max_length=50,
+        verbose_name='фамилия'
+    )
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name='создан'
+    )
+    updated_at = models.DateTimeField(
+        auto_now=True,
+        verbose_name='изменен'
+    )
+    products = models.ManyToManyField(
+        Product,
+        related_name='product_orders',
+        through='OrderPosition',
+        verbose_name='продукты'
+    )
+
+    class Meta:
+        ordering = ['updated_at', 'address']
+        verbose_name = 'заказ'
+        verbose_name_plural = 'заказы'
+
+    def __str__(self):
+        return f'{self.updated_at} - phone: {self.phonenumber}'
 
 
 class OrderPosition(models.Model):
-    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='positions')
-    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='positions')
-    quantity = models.PositiveIntegerField(null=True)
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.CASCADE,
+        related_name='positions',
+        verbose_name='продукт'
+    )
+    order = models.ForeignKey(
+        Order,
+        on_delete=models.CASCADE,
+        related_name='positions',
+        verbose_name='заказ'
+    )
+    quantity = models.PositiveIntegerField(
+        verbose_name='количество'
+    )
 
+    class Meta:
+        ordering = ['order', 'product']
+        verbose_name = 'позиция заказа'
+        verbose_name_plural = 'позиции заказов'
+
+    def __str__(self):
+        return f'{self.order} - {self.product.name} - {self.quantity}'
