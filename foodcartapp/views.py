@@ -2,9 +2,10 @@ import json
 
 from django.http import JsonResponse
 from django.templatetags.static import static
-from pprint import pprint
+from rest_framework.response import Response
 
 from .models import Product, Order, OrderPosition
+from rest_framework.decorators import api_view
 
 
 def banners_list_api(request):
@@ -59,9 +60,10 @@ def product_list_api(request):
     })
 
 
+@api_view(['POST'])
 def register_order(request):
     try:
-        order_data = json.loads(request.body)
+        order_data = request.data
         order = Order.objects.create(
             phonenumber=order_data['phonenumber'],
             address=order_data['address'],
@@ -78,7 +80,7 @@ def register_order(request):
             )
 
     except ValueError:
-        return JsonResponse({
+        return Response({
             'error': 'Данные не отправлены',
         })
-    return JsonResponse(order_data)
+    return Response(order_data)
