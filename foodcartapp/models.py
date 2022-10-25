@@ -125,14 +125,6 @@ class RestaurantMenuItem(models.Model):
 
 
 class Order(models.Model):
-    phonenumber = PhoneNumberField(
-        db_index=True,
-        verbose_name='телефон'
-    )
-    address = models.CharField(
-        max_length=255,
-        verbose_name='адрес'
-    )
     firstname = models.CharField(
         max_length=50,
         verbose_name='имя'
@@ -140,6 +132,14 @@ class Order(models.Model):
     lastname = models.CharField(
         max_length=50,
         verbose_name='фамилия'
+    )
+    address = models.CharField(
+        max_length=255,
+        verbose_name='адрес доставки'
+    )
+    phonenumber = PhoneNumberField(
+        db_index=True,
+        verbose_name='мобильный телефон'
     )
     created_at = models.DateTimeField(
         auto_now_add=True,
@@ -162,7 +162,7 @@ class Order(models.Model):
         verbose_name_plural = 'заказы'
 
     def __str__(self):
-        return f'{self.updated_at} - phone: {self.phonenumber}'
+        return f'{self.firstname} {self.lastname}: {self.address}'
 
 
 class OrderPosition(models.Model):
@@ -184,8 +184,8 @@ class OrderPosition(models.Model):
 
     class Meta:
         ordering = ['order', 'product']
-        verbose_name = 'позиция заказа'
-        verbose_name_plural = 'позиции заказов'
+        verbose_name = 'пункт позиции заказа'
+        verbose_name_plural = 'позиции заказа'
 
     def __str__(self):
         return f'{self.order} - {self.product.name} - {self.quantity}'
