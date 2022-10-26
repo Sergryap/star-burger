@@ -92,36 +92,41 @@ def register_order(request):
 
 def check_invalid_data(order_data: dict) -> Union[dict, bool]:
     invalid_data = None
+    required_data = {'products', 'firstname', 'lastname', 'phonenumber', 'address'}
 
-    if order_data.get('products') is not None:
+    # проверка на наличие всех ключей
+    if len(required_data.intersection(set(order_data))) < 5:
+        no_data = required_data.difference(set(order_data))
+        invalid_data = {'error': 'Не достаточно данных'}
+        invalid_data.update({position: 'Это поле обязательно!' for position in list(no_data)})
 
-        if not isinstance(order_data.get('products'), (list, tuple)):
-            invalid_data = {
-                'error': 'Ожидался list со значениями, но был получен str',
-                'products': order_data["products"]
-            }
-        elif not order_data['products']:
-            invalid_data = {
-                'error': 'Этот список не может быть пустым',
-                'products': order_data["products"]
-            }
+    # проверка всех позиций на вхождение null
+    elif None in order_data.values():
+        null_data = [name for name in order_data if order_data[name] is None]
+        invalid_data = {'error': 'Не достаточно данных'}
+        invalid_data.update({position: 'Это поле не должно быть пустым!' for position in null_data})
 
-    elif order_data.get('products', 0) == 0:
+    # проверка на пустые значения всех позиций
+    elif (
+        not all(order_data.values())
+        and all([isinstance(value, str) for key, value in order_data.items() if key != 'products'])
+    ):
+        empty_data = [name for name in order_data if not order_data[name]]
+        invalid_data = {'error': 'Не достаточно данных'}
+        invalid_data.update({position: 'Это поле не должно быть пустым!' for position in empty_data})
+
+    # проверка типа данных для 'products'
+    elif not isinstance(order_data.get('products'), (list, tuple)):
         invalid_data = {
-            'error': 'Это обязательное поле',
-            'products': '[products]'
-        }
-
-    elif order_data['products'] is None:
-        invalid_data = {
-            'error': 'Это поле не может быть пустым',
+            'error': 'Ожидался list со значениями, но был получен str',
             'products': order_data["products"]
         }
 
-    if len({'firstname', 'lastname', 'phonenumber', 'address'}.intersection(set(order_data))) != 4:
-        invalid_data = {
-            'error': 'Не достаточно данных',
-        }
+    # проверка типа данных позиций, кроме 'products'
+    elif not all([isinstance(value, str) for key, value in order_data.items() if key != 'products']):
+        non_type_data = [key for key, value in order_data.items() if not isinstance(value, str) and key != 'products']
+        invalid_data = {'error': 'Не верные типы данных'}
+        invalid_data.update({position: 'Поле должно быть строкой!' for position in non_type_data})
 
     if invalid_data:
         return invalid_data
