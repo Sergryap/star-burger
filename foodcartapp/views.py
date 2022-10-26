@@ -1,11 +1,10 @@
-import json
-
+from typing import Union
 from django.http import JsonResponse
 from django.templatetags.static import static
 from rest_framework.response import Response
-
 from .models import Product, Order, OrderPosition
 from rest_framework.decorators import api_view
+from rest_framework import status
 
 
 def banners_list_api(request):
@@ -64,6 +63,10 @@ def product_list_api(request):
 def register_order(request):
     try:
         order_data = request.data
+        invalid_data = check_invalid_data(order_data)
+        if invalid_data:
+            return Response(invalid_data, status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
         order = Order.objects.create(
             phonenumber=order_data['phonenumber'],
             address=order_data['address'],
@@ -77,10 +80,50 @@ def register_order(request):
                 product=product,
                 order=order,
                 quantity=position['quantity'],
-            )
+                )
 
     except ValueError:
         return Response({
             'error': 'Данные не отправлены',
         })
-    return Response(order_data)
+
+    return Response(order_data, status=status.HTTP_201_CREATED)
+
+
+def check_invalid_data(order_data: dict) -> Union[dict, bool]:
+    invalid_data = None
+
+    if order_data.get('products') is not None:
+
+        if not isinstance(order_data.get('products'), (list, tuple)):
+            invalid_data = {
+                'error': 'Ожидался list со значениями, но был получен str',
+                'products': order_data["products"]
+            }
+        elif not order_data['products']:
+            invalid_data = {
+                'error': 'Этот список не может быть пустым',
+                'products': order_data["products"]
+            }
+
+    elif order_data.get('products', 0) == 0:
+        invalid_data = {
+            'error': 'Это обязательное поле',
+            'products': '[products]'
+        }
+
+    elif order_data['products'] is None:
+        invalid_data = {
+            'error': 'Это поле не может быть пустым',
+            'products': order_data["products"]
+        }
+
+    if len({'firstname', 'lastname', 'phonenumber', 'address'}.intersection(set(order_data))) != 4:
+        invalid_data = {
+            'error': 'Не достаточно данных',
+        }
+
+    if invalid_data:
+        return invalid_data
+    else:
+        return False
