@@ -9,11 +9,11 @@ from rest_framework.serializers import ModelSerializer, ListField, IntegerField
 
 
 class OrderSerializer(ModelSerializer):
-    products = ListField(allow_empty=False)
+    products = ListField(allow_empty=False, write_only=True)
 
     class Meta:
         model = Order
-        fields = ['firstname', 'lastname', 'address', 'phonenumber', 'products']
+        fields = ['id', 'firstname', 'lastname', 'address', 'phonenumber', 'products']
 
 
 class OrderPositionSerializer(ModelSerializer):
@@ -102,5 +102,6 @@ def register_order(request):
         for position in order_data['products']
     ]
     OrderPosition.objects.bulk_create(positions)
+    out_serializer = OrderSerializer(instance=order)
 
-    return Response(order_data, status=status.HTTP_201_CREATED)
+    return Response(out_serializer.data, status=status.HTTP_201_CREATED)
