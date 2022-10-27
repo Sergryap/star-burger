@@ -153,7 +153,7 @@ class Order(models.Model):
         Product,
         related_name='product_orders',
         through='OrderPosition',
-        verbose_name='продукты'
+        verbose_name='продукты',
     )
 
     class Meta:
