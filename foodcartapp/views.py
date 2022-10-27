@@ -1,3 +1,4 @@
+import re
 from typing import Union
 from django.http import JsonResponse
 from django.templatetags.static import static
@@ -63,9 +64,9 @@ def product_list_api(request):
 def register_order(request):
     try:
         order_data = request.data
-        invalid_data = check_invalid_data(order_data)
-        if invalid_data:
-            return Response(invalid_data, status=status.HTTP_405_METHOD_NOT_ALLOWED)
+        response_err = check_invalid_order(order_data)
+        if response_err:
+            return Response(response_err, status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
         order = Order.objects.create(
             phonenumber=order_data['phonenumber'],
@@ -83,52 +84,71 @@ def register_order(request):
                 )
 
     except ValueError:
-        return Response({
-            'error': 'Данные не отправлены',
-        })
+        return Response({'error': 'Данные не отправлены'})
 
     return Response(order_data, status=status.HTTP_201_CREATED)
 
 
-def check_invalid_data(order_data: dict) -> Union[dict, bool]:
-    invalid_data = None
-    required_data = {'products', 'firstname', 'lastname', 'phonenumber', 'address'}
+def check_invalid_order(order_data: dict) -> Union[dict, bool]:
+    '''Проверка корректности данных заказа'''
+
+    err_str = 'Поле должно быть строкой'
+    keys_type = {
+        'products': {'type': (list, tuple), 'err': 'Поле должно содержать список'},
+        'firstname': {'type': str, 'err': err_str},
+        'lastname': {'type': str, 'err': err_str},
+        'phonenumber': {'type': str, 'err': err_str},
+        'address': {'type': str, 'err': err_str},
+    }
 
     # проверка на наличие всех ключей
-    if len(required_data.intersection(set(order_data))) < 5:
-        no_data = required_data.difference(set(order_data))
-        invalid_data = {'error': 'Не достаточно данных'}
-        invalid_data.update({position: 'Это поле обязательно!' for position in list(no_data)})
-
-    # проверка всех позиций на вхождение null
-    elif None in order_data.values():
-        null_data = [name for name in order_data if order_data[name] is None]
-        invalid_data = {'error': 'Не достаточно данных'}
-        invalid_data.update({position: 'Это поле не должно быть пустым!' for position in null_data})
-
-    # проверка на пустые значения всех позиций
-    elif (
-        not all(order_data.values())
-        and all([isinstance(value, str) for key, value in order_data.items() if key != 'products'])
-    ):
-        empty_data = [name for name in order_data if not order_data[name]]
-        invalid_data = {'error': 'Не достаточно данных'}
-        invalid_data.update({position: 'Это поле не должно быть пустым!' for position in empty_data})
-
-    # проверка типа данных для 'products'
-    elif not isinstance(order_data.get('products'), (list, tuple)):
-        invalid_data = {
-            'error': 'Ожидался list со значениями, но был получен str',
-            'products': order_data["products"]
+    if len(set(keys_type).intersection(order_data)) < 5:
+        no_keys = set(keys_type).difference(order_data)
+        return {
+            'error': 'Не достаточно данных',
+            'fields': {key: 'Это поле обязательно!' for key in list(no_keys)}
         }
 
-    # проверка типа данных позиций, кроме 'products'
-    elif not all([isinstance(value, str) for key, value in order_data.items() if key != 'products']):
-        non_type_data = [key for key, value in order_data.items() if not isinstance(value, str) and key != 'products']
-        invalid_data = {'error': 'Не верные типы данных'}
-        invalid_data.update({position: 'Поле должно быть строкой!' for position in non_type_data})
+    # проверка на вхождение null
+    elif None in order_data.values():
+        null_keys = [key for key in order_data if order_data[key] is None]
+        return {
+            'error': 'Не достаточно данных',
+            'fields': {key: 'Это поле не должно быть null!' for key in null_keys}
+        }
 
-    if invalid_data:
-        return invalid_data
-    else:
-        return False
+    # проверка типа данных
+    elif not all(
+        [isinstance(value, keys_type.get(key).get('type'))
+         for key, value in order_data.items()]
+    ):
+        invalid_keys = [
+            key for key, value in order_data.items()
+            if not isinstance(value, keys_type.get(key).get('type'))
+        ]
+        return {
+            'error': 'Не верные типы данных',
+            'fields': {key: keys_type[key]['err'] for key in invalid_keys}
+        }
+
+    # проверка на пустые значения
+    elif not all(order_data.values()):
+        empty_keys = [key for key in order_data if not order_data[key]]
+        return {
+            'error': 'Не достаточно данных',
+            'fields': {key: 'Это поле не должно быть пустым!' for key in empty_keys}
+        }
+
+    # проверка корректности номера телефона
+    phone_pattern = re.compile(r'^(\+7|7|8)?[\s\-]?\(?[489][0-9]{2}\)?[\s\-]?[0-9]{3}[\s\-]?[0-9]{2}[\s\-]?[0-9]{2}$')
+    if not bool(phone_pattern.findall(order_data['phonenumber'])):
+        return {'phonenumber': 'Не корректный номер телефона'}
+
+    # Проверка содержания products
+    for product in order_data['products']:
+        if len({'product', 'quantity'}.intersection(product)) < 2:
+            return {'error_products': 'Позиции продукта должны содержать поля product и quantity'}
+        if not Product.objects.filter(pk=product.get('product', 0)):
+            return {'error_products': 'Не допустимый первичный ключ'}
+
+    return False
