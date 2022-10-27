@@ -75,13 +75,15 @@ def register_order(request):
             lastname=order_data['lastname'],
         )
 
-        for position in order_data['products']:
-            product = Product.objects.get(pk=position['product'])
-            OrderPosition.objects.create(
-                product=product,
+        positions = [
+            OrderPosition(
                 order=order,
-                quantity=position['quantity'],
-                )
+                product=Product.objects.get(pk=position['product']),
+                quantity=position['quantity']
+            )
+            for position in order_data['products']
+        ]
+        OrderPosition.objects.bulk_create(positions)
 
     except ValueError:
         return Response({'error': 'Данные не отправлены'})
