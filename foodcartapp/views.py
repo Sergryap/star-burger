@@ -1,7 +1,3 @@
-import re
-from typing import Union
-
-from django.db.models import Max
 from django.http import JsonResponse
 from django.templatetags.static import static
 from rest_framework.exceptions import ValidationError
