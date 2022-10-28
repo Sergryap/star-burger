@@ -1,4 +1,5 @@
 from django import forms
+from django.db.models import Sum, F
 from django.shortcuts import redirect, render
 from django.views import View
 from django.urls import reverse_lazy
@@ -8,7 +9,7 @@ from django.contrib.auth import authenticate, login
 from django.contrib.auth import views as auth_views
 
 
-from foodcartapp.models import Product, Restaurant, Order
+from foodcartapp.models import Product, Restaurant, Order, OrderPosition
 
 
 class Login(forms.Form):
@@ -93,7 +94,17 @@ def view_restaurants(request):
 @user_passes_test(is_manager, login_url='restaurateur:login')
 def view_orders(request):
 
+    orders = (
+        OrderPosition.objects
+        .select_related('product')
+        .select_related('order')
+        .values('order_id')
+        .annotate(total=Sum(F('product__price') * F('quantity'))).order_by()
+        .values('order', 'order__firstname', 'order__lastname', 'order__phonenumber', 'order__address', 'total')
+
+    )
+
     return render(request,
                   template_name='order_items.html',
-                  context={'order_items': Order.objects.all()}
+                  context={'order_items': orders}
                   )
