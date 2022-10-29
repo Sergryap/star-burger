@@ -6,7 +6,8 @@ from django.db import migrations
 def copy_price_from_product_to_orderposition(apps, schema_editor):
     Product = apps.get_model('foodcartapp', 'Product')
     OrderPosition = apps.get_model('foodcartapp', 'OrderPosition')
-    for product in Product.objects.all():
+    products = Product.objects.all()
+    for product in products.iterator():
         positions = product.positions.all()
         for position in positions:
             position.price = product.price
