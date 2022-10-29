@@ -205,6 +205,12 @@ class OrderPosition(models.Model):
     quantity = models.PositiveIntegerField(
         verbose_name='количество'
     )
+    price = models.DecimalField(
+        'цена',
+        max_digits=8,
+        decimal_places=2,
+        validators=[MinValueValidator(0)]
+    )
 
     class Meta:
         ordering = ['order', 'product']

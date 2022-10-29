@@ -1,3 +1,4 @@
+from django.db.models import OuterRef
 from django.http import JsonResponse
 from django.templatetags.static import static
 from rest_framework.exceptions import ValidationError
@@ -93,14 +94,23 @@ def register_order(request):
         lastname=order_data['lastname'],
     )
 
-    positions = [
-        OrderPosition(
-            order=order,
-            product=Product.objects.get(pk=position['product']),
-            quantity=position['quantity']
+    positions = []
+    products = {
+        product.pk: product
+        for product in Product.objects.filter(pk__in=[pk['product'] for pk in order_data['products']])
+    }
+
+    for position in order_data['products']:
+        product = products[position['product']]
+        positions.append(
+            OrderPosition(
+                order=order,
+                product=product,
+                price=product.price,
+                quantity=position['quantity']
+            )
         )
-        for position in order_data['products']
-    ]
+
     OrderPosition.objects.bulk_create(positions)
     out_serializer = OrderSerializer(instance=order)
 
