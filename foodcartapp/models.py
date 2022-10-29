@@ -1,5 +1,6 @@
 from django.db import models
 from django.core.validators import MinValueValidator
+from django.db.models import Sum, F, OuterRef, Subquery
 from phonenumber_field.modelfields import PhoneNumberField
 
 
@@ -124,6 +125,28 @@ class RestaurantMenuItem(models.Model):
         return f"{self.restaurant.name} - {self.product.name}"
 
 
+class OrderQuerySet(models.QuerySet):
+    @staticmethod
+    def add_total_cost():
+        cost = (
+            OrderPosition.objects
+            .select_related('product')
+            .select_related('order')
+            .values('order_id')
+            .annotate(total=Sum(F('product__price') * F('quantity')))
+            .order_by()
+            .values('order', 'total')
+            .filter(order=OuterRef('pk'))
+        )
+        orders = (
+            Order.objects
+            .annotate(total=Subquery(cost.values('total')))
+            .order_by('created_at')
+        )
+
+        return orders
+
+
 class Order(models.Model):
     firstname = models.CharField(
         max_length=50,
@@ -155,6 +178,7 @@ class Order(models.Model):
         through='OrderPosition',
         verbose_name='продукты',
     )
+    objects = OrderQuerySet.as_manager()
 
     class Meta:
         ordering = ['updated_at', 'address']
