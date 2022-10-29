@@ -1,4 +1,3 @@
-from django.db.models import OuterRef
 from django.http import JsonResponse
 from django.templatetags.static import static
 from rest_framework.exceptions import ValidationError
@@ -7,6 +6,7 @@ from .models import Product, Order, OrderPosition
 from rest_framework.decorators import api_view
 from rest_framework import status
 from rest_framework.serializers import ModelSerializer, ListField, IntegerField
+from django.db import transaction
 
 
 class OrderSerializer(ModelSerializer):
@@ -77,6 +77,7 @@ def product_list_api(request):
     })
 
 
+@transaction.atomic
 @api_view(['POST'])
 def register_order(request):
     order_data = request.data
