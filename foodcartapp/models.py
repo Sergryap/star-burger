@@ -130,9 +130,8 @@ class OrderQuerySet(models.QuerySet):
     def add_total_cost():
         cost = (
             OrderPosition.objects
-            .select_related('product')
             .values('order_id')
-            .annotate(total=Sum(F('product__price') * F('quantity')))
+            .annotate(total=Sum(F('price') * F('quantity')))
             .filter(order=OuterRef('pk'))
         )
         orders = (
