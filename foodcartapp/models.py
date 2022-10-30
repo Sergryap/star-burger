@@ -152,6 +152,10 @@ class Order(models.Model):
         COURIER = 'CR', _('Передан курьеру')
         COMPLETED = 'OK', _('Выполнен')
 
+    class PaymentMethod(models.TextChoices):
+        CASH = 'CH', _('Наличностью')
+        REMOTE = 'RM', _('Электронно')
+
     status = models.CharField(
         max_length=2,
         choices=Status.choices,
@@ -159,6 +163,14 @@ class Order(models.Model):
         db_index=True,
         verbose_name='статус'
     )
+
+    payment_method = models.CharField(
+        max_length=2,
+        choices=PaymentMethod.choices,
+        db_index=True,
+        verbose_name='способ оплаты'
+    )
+
     firstname = models.CharField(
         max_length=50,
         verbose_name='имя'
