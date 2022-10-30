@@ -94,9 +94,8 @@ def view_restaurants(request):
 def view_orders(request):
 
     orders = Order.objects.add_total_cost()
-    next_url = f"?next={reverse('restaurateur:view_orders')}"
 
     return render(request,
                   template_name='order_items.html',
-                  context={'order_items': orders, 'next_url': next_url}
+                  context={'order_items': orders}
                   )
