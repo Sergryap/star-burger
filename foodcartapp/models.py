@@ -151,6 +151,13 @@ class Order(models.Model):
         COURIER = 'CR', _('Передан курьеру')
         COMPLETED = 'OK', _('Выполнен')
 
+    status = models.CharField(
+        max_length=2,
+        choices=Status.choices,
+        default=Status.UNPROCESSED,
+        db_index=True,
+        verbose_name='статус'
+    )
     firstname = models.CharField(
         max_length=50,
         verbose_name='имя'
@@ -181,12 +188,9 @@ class Order(models.Model):
         through='OrderPosition',
         verbose_name='продукты',
     )
-    status = models.CharField(
-        max_length=2,
-        choices=Status.choices,
-        default=Status.UNPROCESSED,
-        db_index=True,
-        verbose_name='статус'
+    comment = models.TextField(
+        blank=True,
+        verbose_name='комментарий'
     )
 
     objects = OrderQuerySet.as_manager()
