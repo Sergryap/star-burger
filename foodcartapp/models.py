@@ -3,6 +3,7 @@ from django.db import models
 from django.core.validators import MinValueValidator
 from django.db.models import Sum, F, OuterRef, Subquery
 from phonenumber_field.modelfields import PhoneNumberField
+from django.utils import timezone
 
 
 class Restaurant(models.Model):
@@ -138,7 +139,7 @@ class OrderQuerySet(models.QuerySet):
         orders = (
             Order.objects
             .annotate(total=Subquery(cost.values('total')))
-            .order_by('-updated_at')
+            .order_by('-registrated_at')
         )
 
         return orders
@@ -174,19 +175,26 @@ class Order(models.Model):
         db_index=True,
         verbose_name='мобильный телефон'
     )
-    created_at = models.DateTimeField(
-        auto_now_add=True,
-        verbose_name='создан'
+    registrated_at = models.DateTimeField(
+        verbose_name='зарегистрирован',
+        default=timezone.now,
+        db_index=True
     )
-    updated_at = models.DateTimeField(
-        auto_now=True,
-        verbose_name='изменен'
+    called_at = models.DateTimeField(
+        verbose_name='время звонка',
+        blank=True,
+        null=True
+    )
+    delivered_at = models.DateTimeField(
+        verbose_name='время доставки',
+        blank=True,
+        null=True
     )
     products = models.ManyToManyField(
         Product,
         related_name='product_orders',
         through='OrderPosition',
-        verbose_name='продукты',
+        verbose_name='продукты'
     )
     comment = models.TextField(
         blank=True,
@@ -196,7 +204,7 @@ class Order(models.Model):
     objects = OrderQuerySet.as_manager()
 
     class Meta:
-        ordering = ['-updated_at', 'address']
+        ordering = ['-registrated_at', 'address']
         verbose_name = 'заказ'
         verbose_name_plural = 'заказы'
 

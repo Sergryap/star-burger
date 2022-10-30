@@ -117,6 +117,7 @@ class ProductAdmin(admin.ModelAdmin):
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
     inlines = [OrderPositionItemInline]
+    readonly_fields = ['registrated_at']
 
     def response_post_save_change(self, request, obj):
         res = super().response_post_save_change(request, obj)
