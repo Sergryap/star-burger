@@ -1,3 +1,4 @@
+from django.utils.translation import gettext_lazy as _
 from django.db import models
 from django.core.validators import MinValueValidator
 from django.db.models import Sum, F, OuterRef, Subquery
@@ -144,6 +145,12 @@ class OrderQuerySet(models.QuerySet):
 
 
 class Order(models.Model):
+    class Status(models.TextChoices):
+        UNPROCESSED = 'UN', _('Необработанный')
+        RESTAURANT = 'RS', _('Передан в ресторан')
+        COURIER = 'CR', _('Передан курьеру')
+        COMPLETED = 'OK', _('Выполнен')
+
     firstname = models.CharField(
         max_length=50,
         verbose_name='имя'
@@ -174,6 +181,14 @@ class Order(models.Model):
         through='OrderPosition',
         verbose_name='продукты',
     )
+    status = models.CharField(
+        max_length=2,
+        choices=Status.choices,
+        default=Status.UNPROCESSED,
+        db_index=True,
+        verbose_name='статус'
+    )
+
     objects = OrderQuerySet.as_manager()
 
     class Meta:
