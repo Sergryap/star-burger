@@ -139,7 +139,7 @@ class OrderQuerySet(models.QuerySet):
         orders = (
             Order.objects
             .annotate(total=Subquery(cost.values('total')))
-            .order_by('-registrated_at')
+            .order_by('called_at', '-registrated_at')
         )
 
         return orders
@@ -258,7 +258,7 @@ class Order(models.Model):
     objects = OrderQuerySet.as_manager()
 
     class Meta:
-        ordering = ['-registrated_at', 'address']
+        ordering = ['called_at', '-registrated_at', 'address']
         verbose_name = 'заказ'
         verbose_name_plural = 'заказы'
 
