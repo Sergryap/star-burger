@@ -1,5 +1,6 @@
 {% extends 'base_restaurateur_page.html' %}
 {% load link_edit_orders %}
+{% load get_restaurant_html %}
 {% block title %}Необработанные заказы | Star Burger{% endblock %}
 
 {% block content %}
@@ -21,6 +22,7 @@
       <th>Телефон</th>
       <th>Адрес доставки</th>
       <th>Комментарий</th>
+      <th>Рестораны</th>
       <th>Ссылка на админку</th>
     </tr>
 
@@ -34,6 +36,7 @@
         <td>{{ item.phonenumber }}</td>
         <td>{{ item.address }}</td>
         <td>{{ item.comment }}</td>
+        <td>{{ order_restaurants|get_restaurant_html:item.pk }}</td>
         <td>
           <a href="{{ item|link_edit_orders }}">Редактировать</a>
         </td>

@@ -75,6 +75,7 @@ TEMPLATES = [
             ],
             'libraries': {
                 'link_edit_orders': 'templatetags.link_edit_orders',
+                'get_restaurant_html': 'templatetags.get_restaurant_html'
             }
         },
     },

@@ -1,7 +1,7 @@
 from django.utils.translation import gettext_lazy as _
 from django.db import models
 from django.core.validators import MinValueValidator
-from django.db.models import Sum, F, OuterRef, Subquery
+from django.db.models import Sum, F, OuterRef, Subquery, Prefetch, Count
 from phonenumber_field.modelfields import PhoneNumberField
 from django.utils import timezone
 
@@ -143,6 +143,27 @@ class OrderQuerySet(models.QuerySet):
         )
 
         return orders
+
+    @staticmethod
+    def get_restaurants_available():
+        orders = Order.objects.all().prefetch_related(
+            Prefetch('products', Product.objects.only('pk'))
+        )
+        restaurants_available = {}
+
+        for order in orders:
+            restaurants = list(
+                RestaurantMenuItem.objects.select_related('restaurant')
+                .filter(availability=True, product__in=order.products.all())
+                .values('restaurant')
+                .annotate(count_products=Count('restaurant'))
+                .filter(count_products=order.products.count())
+                .values('restaurant', name=F('restaurant__name'))
+            )
+
+            restaurants_available.update({order.pk: restaurants})
+
+        return restaurants_available
 
 
 class Order(models.Model):

@@ -94,8 +94,12 @@ def view_restaurants(request):
 def view_orders(request):
 
     orders = Order.objects.add_total_cost().exclude(status='OK')
+    order_restaurants = Order.objects.get_restaurants_available()
 
     return render(request,
                   template_name='order_items.html',
-                  context={'order_items': orders}
+                  context={
+                      'order_items': orders,
+                      'order_restaurants': order_restaurants
+                  }
                   )
