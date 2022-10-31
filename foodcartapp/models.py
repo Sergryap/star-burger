@@ -184,7 +184,13 @@ class Order(models.Model):
         db_index=True,
         verbose_name='статус'
     )
-
+    restaurant_order = models.ForeignKey(
+        Restaurant,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='orders',
+        verbose_name='готовит ресторан'
+    )
     payment_method = models.CharField(
         max_length=2,
         choices=PaymentMethod.choices,
