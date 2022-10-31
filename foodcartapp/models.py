@@ -152,17 +152,30 @@ class OrderQuerySet(models.QuerySet):
         restaurants_available = {}
 
         for order in orders:
-            restaurants = list(
-                RestaurantMenuItem.objects.select_related('restaurant')
-                .filter(availability=True, product__in=order.products.all())
-                .values('restaurant')
-                .annotate(count_products=Count('restaurant'))
-                .filter(count_products=order.products.count())
-                .values('restaurant', name=F('restaurant__name'))
-            )
-
-            restaurants_available.update({order.pk: restaurants})
-
+            if not order.restaurant_order:
+                restaurants = list(
+                    RestaurantMenuItem.objects.select_related('restaurant')
+                    .filter(availability=True, product__in=order.products.all())
+                    .values('restaurant')
+                    .annotate(count_products=Count('restaurant'))
+                    .filter(count_products=order.products.count())
+                    .values('restaurant', name=F('restaurant__name'))
+                )
+                restaurants_available.update({order.pk: restaurants})
+                print(restaurants)
+            else:
+                restaurants_available.update(
+                    {
+                        order.pk: [
+                            {
+                                'restaurant': order.restaurant_order.pk,
+                                'name': order.restaurant_order.name,
+                                'prepare': True
+                            }
+                        ]
+                    }
+                )
+                print(restaurants_available)
         return restaurants_available
 
 
@@ -188,6 +201,7 @@ class Order(models.Model):
         Restaurant,
         on_delete=models.SET_NULL,
         null=True,
+        blank=True,
         related_name='orders',
         verbose_name='готовит ресторан'
     )
