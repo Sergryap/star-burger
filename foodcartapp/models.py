@@ -138,6 +138,12 @@ class OrderQuerySet(models.QuerySet):
         )
         orders = (
             Order.objects
+            .defer(
+                'restaurant_order',
+                'registrated_at',
+                'called_at',
+                'delivered_at',
+            )
             .annotate(total=Subquery(cost.values('total')))
             .order_by('called_at', '-registrated_at')
         )
@@ -149,6 +155,7 @@ class OrderQuerySet(models.QuerySet):
         orders = (
             Order.objects.all()
             .select_related('restaurant_order')
+            .only('restaurant_order', 'restaurant_order__name')
             .prefetch_related(
                 Prefetch('products', Product.objects.only('pk'))
             )
@@ -158,7 +165,9 @@ class OrderQuerySet(models.QuerySet):
         for order in orders:
             if not order.restaurant_order:
                 restaurants = list(
-                    RestaurantMenuItem.objects.select_related('restaurant')
+                    RestaurantMenuItem.objects
+                    .select_related('restaurant')
+                    .defer('restaurant__address', 'restaurant__contact_phone')
                     .filter(availability=True, product__in=order.products.all())
                     .values('restaurant')
                     .annotate(count_products=Count('restaurant'))
