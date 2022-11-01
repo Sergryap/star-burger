@@ -1,6 +1,6 @@
 from django.utils.translation import gettext_lazy as _
 from django.db import models
-from django.core.validators import MinValueValidator
+from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db.models import Sum, F, OuterRef, Subquery, Prefetch, Count
 from phonenumber_field.modelfields import PhoneNumberField
 from django.utils import timezone
@@ -155,7 +155,12 @@ class OrderQuerySet(models.QuerySet):
         orders = (
             Order.objects.all()
             .select_related('restaurant_order')
-            .only('restaurant_order', 'restaurant_order__name')
+            .only(
+                'address',
+                'restaurant_order',
+                'restaurant_order__name',
+                'restaurant_order__address'
+            )
             .prefetch_related(
                 Prefetch('products', Product.objects.only('pk'))
             )
@@ -167,21 +172,41 @@ class OrderQuerySet(models.QuerySet):
                 restaurants = list(
                     RestaurantMenuItem.objects
                     .select_related('restaurant')
-                    .defer('restaurant__address', 'restaurant__contact_phone')
+                    .defer('restaurant__contact_phone')
                     .filter(availability=True, product__in=order.products.all())
                     .values('restaurant')
                     .annotate(count_products=Count('restaurant'))
                     .filter(count_products=order.products.count())
-                    .values('restaurant', name=F('restaurant__name'))
+                    .values(
+                        'restaurant',
+                        name=F('restaurant__name'),
+                        address=F('restaurant__address')
+                    )
                 )
-                restaurants_available.update({order.pk: restaurants})
+                restaurants_available.update(
+                    {
+                        order.pk: {
+                            'restaurants': restaurants,
+                            'address': order.address
+                        }
+
+                    }
+                )
             else:
                 restaurants_available.update(
-                    {order.pk: [
-                        {'restaurant': order.restaurant_order.pk,
-                         'name': order.restaurant_order.name,
-                         'prepare': True}
-                    ]}
+                    {
+                        order.pk: {
+                            'restaurants': [
+                                {
+                                    'restaurant': order.restaurant_order.pk,
+                                    'name': order.restaurant_order.name,
+                                    'address': order.restaurant_order.address,
+                                    'prepare': True
+                                }
+                            ],
+                            'address': order.address
+                        }
+                    }
                 )
 
         return restaurants_available
@@ -304,3 +329,33 @@ class OrderPosition(models.Model):
 
     def __str__(self):
         return f'{self.order} - {self.product.name} - {self.quantity}'
+
+
+# class PlaceCoord(models.Model):
+#     address = models.CharField(
+#         max_length=255,
+#         verbose_name='адрес',
+#         unique=True,
+#         db_index=True
+#     )
+#     lng = models.DecimalField(
+#         max_digits=9,
+#         decimal_places=6,
+#         validators=[
+#             MinValueValidator(limit_value=-180),
+#             MaxValueValidator(limit_value=180)
+#         ]
+#     )
+#     lat = models.DecimalField(
+#         max_digits=8,
+#         decimal_places=6,
+#         validators=[
+#             MinValueValidator(limit_value=-90),
+#             MaxValueValidator(limit_value=90)
+#         ]
+#     )
+#     request_time = models.DateTimeField(
+#         verbose_name='время запроса',
+#         default=timezone.now,
+#         db_index=True
+#     )
