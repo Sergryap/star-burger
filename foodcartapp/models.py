@@ -146,8 +146,12 @@ class OrderQuerySet(models.QuerySet):
 
     @staticmethod
     def get_restaurants_available():
-        orders = Order.objects.all().prefetch_related(
-            Prefetch('products', Product.objects.only('pk'))
+        orders = (
+            Order.objects.all()
+            .select_related('restaurant_order')
+            .prefetch_related(
+                Prefetch('products', Product.objects.only('pk'))
+            )
         )
         restaurants_available = {}
 
@@ -162,20 +166,15 @@ class OrderQuerySet(models.QuerySet):
                     .values('restaurant', name=F('restaurant__name'))
                 )
                 restaurants_available.update({order.pk: restaurants})
-                print(restaurants)
             else:
                 restaurants_available.update(
-                    {
-                        order.pk: [
-                            {
-                                'restaurant': order.restaurant_order.pk,
-                                'name': order.restaurant_order.name,
-                                'prepare': True
-                            }
-                        ]
-                    }
+                    {order.pk: [
+                        {'restaurant': order.restaurant_order.pk,
+                         'name': order.restaurant_order.name,
+                         'prepare': True}
+                    ]}
                 )
-                print(restaurants_available)
+
         return restaurants_available
 
 

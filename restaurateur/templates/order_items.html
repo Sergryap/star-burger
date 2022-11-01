@@ -1,7 +1,31 @@
 {% extends 'base_restaurateur_page.html' %}
 {% load link_edit_orders %}
-{% load get_restaurant_html %}
+{% load get_restaurants_order_available %}
 {% block title %}Необработанные заказы | Star Burger{% endblock %}
+
+{% block add_style %}
+<style type="text/css">
+  details {
+    border: 1px solid #aaa;
+    border-radius: 4px;
+    padding: .5em .5em 0;
+  }
+  summary {
+      font-weight: bold;
+      margin: -.5em -.5em 0;
+      padding: .5em;
+      background-color: #BBFFEE;
+  }
+  details[open] {
+      padding: .5em;
+  }
+  details[open] summary {
+    border-bottom: 1px solid #aaa;
+    margin-bottom: .5em;
+  }
+
+</style>
+{% endblock %}
 
 {% block content %}
   <center>
@@ -36,7 +60,9 @@
         <td>{{ item.phonenumber }}</td>
         <td>{{ item.address }}</td>
         <td>{{ item.comment }}</td>
-        <td>{{ order_restaurants|get_restaurant_html:item.pk }}</td>
+        <td width="18%">
+          {{ restaurants_available|get_restaurants_order_available:item.pk }}
+        </td>
         <td>
           <a href="{{ item|link_edit_orders }}">Редактировать</a>
         </td>
