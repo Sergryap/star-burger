@@ -329,33 +329,3 @@ class OrderPosition(models.Model):
 
     def __str__(self):
         return f'{self.order} - {self.product.name} - {self.quantity}'
-
-
-# class PlaceCoord(models.Model):
-#     address = models.CharField(
-#         max_length=255,
-#         verbose_name='адрес',
-#         unique=True,
-#         db_index=True
-#     )
-#     lng = models.DecimalField(
-#         max_digits=9,
-#         decimal_places=6,
-#         validators=[
-#             MinValueValidator(limit_value=-180),
-#             MaxValueValidator(limit_value=180)
-#         ]
-#     )
-#     lat = models.DecimalField(
-#         max_digits=8,
-#         decimal_places=6,
-#         validators=[
-#             MinValueValidator(limit_value=-90),
-#             MaxValueValidator(limit_value=90)
-#         ]
-#     )
-#     request_time = models.DateTimeField(
-#         verbose_name='время запроса',
-#         default=timezone.now,
-#         db_index=True
-#     )

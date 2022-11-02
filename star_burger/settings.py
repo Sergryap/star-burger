@@ -20,6 +20,7 @@ ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', ['127.0.0.1', 'localhost'])
 INSTALLED_APPS = [
     'foodcartapp.apps.FoodcartappConfig',
     'restaurateur.apps.RestaurateurConfig',
+    'calcdistances.apps.CalcdistancesConfig',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -75,7 +76,7 @@ TEMPLATES = [
             ],
             'libraries': {
                 'link_edit_orders': 'templatetags.link_edit_orders',
-                'get_restaurants_order_available': 'templatetags.get_restaurants_order_available'
+                'block_available_restaurants': 'templatetags.block_available_restaurants'
             }
         },
     },
