@@ -52,4 +52,3 @@ def create_info_restaurants_to_order(order, apikey):
         </details>
         '''
     )
-

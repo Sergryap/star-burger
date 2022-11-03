@@ -96,3 +96,6 @@ class PlaceCoord(models.Model):
     )
 
     objects = PlaceCoordQuerySet.as_manager()
+
+    class Meta:
+        app_label = 'calcdistances'
