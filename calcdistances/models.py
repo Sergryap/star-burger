@@ -1,6 +1,8 @@
+import xxhash
 import requests
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
+from django.db.models import Q
 from django.utils import timezone
 from math import sin, cos, radians, acos
 
@@ -24,20 +26,31 @@ class PlaceCoordQuerySet(models.QuerySet):
         most_relevant = found_places[0]
         lng, lat = most_relevant['GeoObject']['Point']['pos'].split(" ")
 
-        return {'lng': float(lng), 'lat': float(lat)}
+        return {'lng': float(lng), 'lat': float(lat), 'address': address}
 
     def get_or_create_place(self, apikey, address):
         return (
             PlaceCoord.objects
             .defer('request_time')
             .get_or_create(
-                address=address,
+                hash=xxhash.xxh32(address.encode()).intdigest(),
                 defaults=self.fetch_coordinates(apikey, address))
         )[0]
 
     def calculate_dist_places(self, address1, address2, apikey):
-        place1 = self.get_or_create_place(apikey, address1)
-        place2 = self.get_or_create_place(apikey, address2)
+        places = list(
+            PlaceCoord.objects
+            .defer('request_time')
+            .filter(
+                Q(hash=xxhash.xxh32(address1.encode()).intdigest()) |
+                Q(hash=xxhash.xxh32(address2.encode()).intdigest())
+            )
+        )
+        if len(list(places)) == 2:
+            place1, place2 = places
+        else:
+            place1 = self.get_or_create_place(apikey, address1)
+            place2 = self.get_or_create_place(apikey, address2)
 
         try:
             lng1, lat1, lng2, lat2 = [
@@ -46,16 +59,14 @@ class PlaceCoordQuerySet(models.QuerySet):
             dist_rad = acos(sin(lat1) * sin(lat2) + cos(lat1) * cos(lat2) * cos(lng1 - lng2))
             dist_km = round(6371 * dist_rad, 2)
             return dist_km
-        except Exception:
+        except requests.exceptions.RequestException:
             return "Ошибка определения координат"
 
 
 class PlaceCoord(models.Model):
     address = models.CharField(
         max_length=255,
-        verbose_name='адрес',
-        unique=True,
-        db_index=True
+        verbose_name='адрес'
     )
     lng = models.DecimalField(
         max_digits=9,
@@ -77,6 +88,11 @@ class PlaceCoord(models.Model):
         verbose_name='время запроса',
         default=timezone.now,
         db_index=True
+    )
+    hash = models.PositiveIntegerField(
+        unique=True,
+        db_index=True,
+        validators=[MaxValueValidator(limit_value=9999999999)]
     )
 
     objects = PlaceCoordQuerySet.as_manager()

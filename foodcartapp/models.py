@@ -1,6 +1,6 @@
 from django.utils.translation import gettext_lazy as _
 from django.db import models
-from django.core.validators import MinValueValidator, MaxValueValidator
+from django.core.validators import MinValueValidator
 from django.db.models import Sum, F, OuterRef, Subquery, Prefetch, Count
 from phonenumber_field.modelfields import PhoneNumberField
 from django.utils import timezone
@@ -184,29 +184,19 @@ class OrderQuerySet(models.QuerySet):
                     )
                 )
                 restaurants_available.update(
-                    {
-                        order.pk: {
-                            'restaurants': restaurants,
-                            'address': order.address
-                        }
-
-                    }
+                    {order.pk: {
+                        'restaurants': restaurants,
+                        'address': order.address}}
                 )
             else:
                 restaurants_available.update(
-                    {
-                        order.pk: {
-                            'restaurants': [
-                                {
-                                    'restaurant': order.restaurant_order.pk,
-                                    'name': order.restaurant_order.name,
-                                    'address': order.restaurant_order.address,
-                                    'prepare': True
-                                }
-                            ],
-                            'address': order.address
-                        }
-                    }
+                    {order.pk: {
+                        'restaurants':
+                            [{'restaurant': order.restaurant_order.pk,
+                              'name': order.restaurant_order.name,
+                              'address': order.restaurant_order.address,
+                              'prepare': True}],
+                        'address': order.address}}
                 )
 
         return restaurants_available
