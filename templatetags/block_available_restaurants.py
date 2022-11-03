@@ -1,3 +1,4 @@
+import re
 from django import template
 from environs import Env
 from calcdistances.models import PlaceCoord
@@ -39,8 +40,7 @@ def create_info_restaurants_to_order(order, apikey):
                 )
                 } км<br>'''
                 for t in order['restaurants']
-            ],
-            key=lambda t: float(t.split()[-2])
+            ], key=lambda t: re.search(r'(\d+\.?\d*)\s*км<', t).group(1)
         )
     )
 
