@@ -28,14 +28,19 @@ class PlaceCoordQuerySet(models.QuerySet):
 
         return {'lng': float(lng), 'lat': float(lat), 'address': address}
 
-    def get_or_create_place(self, apikey, address):
-        return (
-            PlaceCoord.objects
-            .defer('request_time')
-            .get_or_create(
-                hash=xxhash.xxh32(address.encode()).intdigest(),
-                defaults=self.fetch_coordinates(apikey, address))
-        )[0]
+    def get_or_create_place(self, apikey, address, existing_place=None):
+        """
+        Возвращает экземпляр класса PlaceOrder.
+        Если он не существует в базе, то он создается и возвращается.
+        Если существует и равен existing_place, то возвращется existing_place
+        """
+        address_hash = xxhash.xxh32(address.encode()).intdigest()
+        if existing_place and existing_place.hash == address_hash:
+            return existing_place
+        else:
+            return PlaceCoord.objects.create(
+                **{'hash': address_hash, **self.fetch_coordinates(apikey, address)}
+            )
 
     def calculate_dist_places(self, address1, address2, apikey):
         places = list(
@@ -46,11 +51,12 @@ class PlaceCoordQuerySet(models.QuerySet):
                 Q(hash=xxhash.xxh32(address2.encode()).intdigest())
             )
         )
-        if len(list(places)) == 2:
+        if len(places) == 2:
             place1, place2 = places
         else:
-            place1 = self.get_or_create_place(apikey, address1)
-            place2 = self.get_or_create_place(apikey, address2)
+            existing_place = places[0] if len(places) == 1 else None
+            place1 = self.get_or_create_place(apikey, address1, existing_place)
+            place2 = self.get_or_create_place(apikey, address2, existing_place)
 
         try:
             lng1, lat1, lng2, lat2 = [
@@ -86,8 +92,7 @@ class PlaceCoord(models.Model):
     )
     request_time = models.DateTimeField(
         verbose_name='время запроса',
-        default=timezone.now,
-        db_index=True
+        default=timezone.now
     )
     hash = models.PositiveIntegerField(
         unique=True,
