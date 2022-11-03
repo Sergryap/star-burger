@@ -2,6 +2,7 @@ import requests
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
 from django.utils import timezone
+from math import sin, cos, radians, acos
 
 
 class PlaceCoordQuerySet(models.QuerySet):
@@ -26,13 +27,27 @@ class PlaceCoordQuerySet(models.QuerySet):
         return {'lng': float(lng), 'lat': float(lat)}
 
     def get_or_create_place(self, apikey, address):
-        place = (
+        return (
             PlaceCoord.objects
+            .defer('request_time')
             .get_or_create(
                 address=address,
                 defaults=self.fetch_coordinates(apikey, address))
         )[0]
-        return place
+
+    def calculate_dist_places(self, address1, address2, apikey):
+        place1 = self.get_or_create_place(apikey, address1)
+        place2 = self.get_or_create_place(apikey, address2)
+
+        try:
+            lng1, lat1, lng2, lat2 = [
+                radians(i) for i in (place1.lng, place1.lat, place2.lng, place2.lat)
+            ]
+            dist_rad = acos(sin(lat1) * sin(lat2) + cos(lat1) * cos(lat2) * cos(lng1 - lng2))
+            dist_km = round(6371 * dist_rad, 2)
+            return dist_km
+        except Exception:
+            return "Ошибка определения координат"
 
 
 class PlaceCoord(models.Model):
