@@ -45,7 +45,7 @@ class PlaceCoordQuerySet(models.QuerySet):
     def calculate_dist_places(self, address1, address2, apikey):
         places = list(
             PlaceCoord.objects
-            .defer('request_time')
+            .defer('request_at')
             .filter(
                 Q(hash=xxhash.xxh32(address1.encode()).intdigest()) |
                 Q(hash=xxhash.xxh32(address2.encode()).intdigest())
@@ -94,7 +94,7 @@ class PlaceCoord(models.Model):
         blank=True,
         null=True,
     )
-    request_time = models.DateTimeField(
+    request_at = models.DateTimeField(
         verbose_name='время запроса',
         default=timezone.now
     )
