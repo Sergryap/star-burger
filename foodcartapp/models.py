@@ -219,6 +219,7 @@ class Order(models.Model):
     class PaymentMethod(models.TextChoices):
         CASH = 'CH', _('Наличностью')
         REMOTE = 'RM', _('Электронно')
+        EMPTY = 'NO', _('Не назначен')
 
     status = models.CharField(
         max_length=2,
@@ -238,7 +239,7 @@ class Order(models.Model):
     payment_method = models.CharField(
         max_length=2,
         choices=PaymentMethod.choices,
-        default=PaymentMethod.CASH,
+        default=PaymentMethod.EMPTY,
         db_index=True,
         verbose_name='способ оплаты'
     )
