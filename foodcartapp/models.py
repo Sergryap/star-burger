@@ -128,26 +128,22 @@ class RestaurantMenuItem(models.Model):
 
 
 class OrderQuerySet(models.QuerySet):
-    @staticmethod
-    def add_total_cost():
+
+    def add_total_cost(self):
         cost = (
             OrderPosition.objects
             .values('order_id')
             .annotate(total=Sum(F('price') * F('quantity')))
             .filter(order=OuterRef('pk'))
         )
-        orders = (
-            Order.objects
-            .defer(
+        return (
+            self.defer(
                 'restaurant_order',
                 'registrated_at',
                 'called_at',
-                'delivered_at',
-            )
-            .annotate(total=Subquery(cost.values('total')))
+                'delivered_at'
+            ).annotate(total=Subquery(cost.values('total')))
         )
-
-        return orders
 
     @staticmethod
     def get_restaurants_available():
