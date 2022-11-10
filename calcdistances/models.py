@@ -72,7 +72,8 @@ class PlaceCoordQuerySet(models.QuerySet):
 class PlaceCoord(models.Model):
     address = models.CharField(
         max_length=255,
-        verbose_name='адрес'
+        verbose_name='адрес',
+        unique=True,
     )
     lng = models.DecimalField(
         max_digits=9,
