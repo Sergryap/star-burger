@@ -80,7 +80,9 @@ class PlaceCoord(models.Model):
         validators=[
             MinValueValidator(limit_value=-180),
             MaxValueValidator(limit_value=180)
-        ]
+        ],
+        blank=True,
+        null=True,
     )
     lat = models.DecimalField(
         max_digits=8,
@@ -88,7 +90,9 @@ class PlaceCoord(models.Model):
         validators=[
             MinValueValidator(limit_value=-90),
             MaxValueValidator(limit_value=90)
-        ]
+        ],
+        blank=True,
+        null=True,
     )
     request_time = models.DateTimeField(
         verbose_name='время запроса',
