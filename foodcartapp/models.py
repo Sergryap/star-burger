@@ -145,7 +145,6 @@ class OrderQuerySet(models.QuerySet):
                 'delivered_at',
             )
             .annotate(total=Subquery(cost.values('total')))
-            .order_by('called_at', '-registrated_at')
         )
 
         return orders
