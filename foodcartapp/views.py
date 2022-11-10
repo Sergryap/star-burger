@@ -93,15 +93,9 @@ def register_order(request):
         firstname=order_data['firstname'],
         lastname=order_data['lastname'],
     )
-
     positions = []
-    products = {
-        product.pk: product
-        for product in Product.objects.filter(pk__in=[pk['product'] for pk in order_data['products']])
-    }
-
     for position in order_data['products']:
-        product = products[position['product']]
+        product = Product.objects.get(pk=position['product'])
         positions.append(
             OrderPosition(
                 order=order,
