@@ -152,52 +152,59 @@ class OrderQuerySet(models.QuerySet):
 
     @staticmethod
     def get_restaurants_available():
-        orders = (
-            Order.objects.all()
-            .select_related('restaurant_order')
-            .only(
-                'address',
-                'restaurant_order',
-                'restaurant_order__name',
-                'restaurant_order__address'
-            )
-            .prefetch_related(
-                Prefetch('products', Product.objects.only('pk'))
-            )
-        )
         restaurants_available = {}
-
-        for order in orders:
-            if not order.restaurant_order:
-                restaurants = list(
-                    RestaurantMenuItem.objects
-                    .select_related('restaurant')
-                    .defer('restaurant__contact_phone')
-                    .filter(availability=True, product__in=order.products.all())
-                    .values('restaurant')
-                    .annotate(count_products=Count('restaurant'))
-                    .filter(count_products=order.products.count())
-                    .values(
-                        'restaurant',
-                        name=F('restaurant__name'),
-                        address=F('restaurant__address')
-                    )
+        orders_restaurant = RestaurantMenuItem.objects.raw(
+            '''
+            SELECT id, order_id, restaurant_id, name, order_address, restaurant_address, restaurant_order_id
+            FROM
+            (
+            SELECT fr.id, restaurant_id, fo3.order_id, fr2.name, fo.address as order_address, fr2.address as restaurant_address, fo.restaurant_order_id, count(*) as count_restaurant
+            FROM foodcartapp_restaurantmenuitem fr
+            JOIN foodcartapp_product fp2 ON fp2.id = fr.product_id
+            JOIN foodcartapp_orderposition fo3 ON fp2.id = fo3.product_id
+            JOIN foodcartapp_restaurant fr2 on fr.restaurant_id = fr2.id
+            JOIN foodcartapp_order fo on fo.id = fo3.order_id
+            WHERE fr.availability = TRUE
+            GROUP by fo3.order_id, restaurant_id
+            HAVING count_restaurant = (
+                select COUNT(*)
+                from foodcartapp_orderposition fo4
+                group by fo4.order_id
+                HAVING fo4.order_id = fo3.order_id
                 )
+            )
+            GROUP BY order_id, restaurant_id
+            '''
+        )
+        order_id = 0
+        restaurants = []
+        for order in list(orders_restaurant):
+            if order.order_id != order_id:
+                order_id = order.order_id
+                restaurants = []
+            if not order.restaurant_order_id:
+                restaurants.append(
+                    {'restaurant': order.restaurant_order_id,
+                     'name': order.name,
+                     'address': order.restaurant_address}
+                )
+
                 restaurants_available.update(
-                    {order.pk: {
+                    {order_id: {
                         'restaurants': restaurants,
-                        'address': order.address}}
+                        'address': order.order_address}}
                 )
             else:
-                restaurants_available.update(
-                    {order.pk: {
-                        'restaurants':
-                            [{'restaurant': order.restaurant_order.pk,
-                              'name': order.restaurant_order.name,
-                              'address': order.restaurant_order.address,
-                              'prepare': True}],
-                        'address': order.address}}
-                )
+                if order.restaurant_id == order.restaurant_order_id:
+                    restaurants_available.update(
+                        {order_id: {
+                            'restaurants':
+                                [{'restaurant': order.restaurant_order_id,
+                                  'name': order.name,
+                                  'address': order.restaurant_address,
+                                  'prepare': True}],
+                            'address': order.order_address}}
+                    )
 
         return restaurants_available
 
