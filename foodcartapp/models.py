@@ -145,15 +145,16 @@ class OrderQuerySet(models.QuerySet):
             ).annotate(total=Subquery(cost.values('total')))
         )
 
-    @staticmethod
-    def get_restaurants_available():
+    def get_restaurants_available(self):
         restaurants_available = {}
-        orders_restaurant = RestaurantMenuItem.objects.raw(
+        orders_restaurant = self.raw(
             '''
             SELECT id, order_id, restaurant_id, name, order_address, restaurant_address, restaurant_order_id
             FROM
             (
-            SELECT fr.id, restaurant_id, fo3.order_id, fr2.name, fo.address as order_address, fr2.address as restaurant_address, fo.restaurant_order_id, count(*) as count_restaurant
+            SELECT
+               fr.id, restaurant_id, fo3.order_id, fr2.name, fo.address as order_address,
+               fr2.address as restaurant_address, fo.restaurant_order_id, count(*) as count_restaurant
             FROM foodcartapp_restaurantmenuitem fr
             JOIN foodcartapp_product fp2 ON fp2.id = fr.product_id
             JOIN foodcartapp_orderposition fo3 ON fp2.id = fo3.product_id
@@ -162,9 +163,9 @@ class OrderQuerySet(models.QuerySet):
             WHERE fr.availability = TRUE
             GROUP by fo3.order_id, restaurant_id
             HAVING count_restaurant = (
-                select COUNT(*)
+                SELECT COUNT(*)
                 from foodcartapp_orderposition fo4
-                group by fo4.order_id
+                GROUP BY fo4.order_id
                 HAVING fo4.order_id = fo3.order_id
                 )
             )
