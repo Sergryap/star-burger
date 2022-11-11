@@ -149,7 +149,9 @@ class OrderQuerySet(models.QuerySet):
         restaurants_available = {}
         orders_restaurant = self.raw(
             '''
-            SELECT id, order_id, restaurant_id, name, order_address, restaurant_address, restaurant_order_id
+            SELECT
+                id, order_id, restaurant_id, name, order_address,
+                restaurant_address, restaurant_order_id
             FROM
             (
             SELECT
