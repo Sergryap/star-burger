@@ -25,6 +25,7 @@ def create_info_restaurants_to_order(order, apikey, order_id):
     if order['restaurants'][0].get('prepare'):
         dist = calculate_dist_places(
             order_id=order_id,
+            hash_order=order['hash'],
             order_coord=order['coordinates'],
             restaurant_id=order['restaurants'][0]['restaurant'],
             restaurant_coord=order['restaurants'][0]['coordinates'],
@@ -44,6 +45,7 @@ def create_info_restaurants_to_order(order, apikey, order_id):
                 f'''&#10004{t['name']} - {
                 calculate_dist_places(
                     order_id=order_id,
+                    hash_order=order['hash'],
                     order_coord=order['coordinates'],
                     restaurant_id=t['restaurant'],
                     restaurant_coord=t['coordinates'],
@@ -51,9 +53,9 @@ def create_info_restaurants_to_order(order, apikey, order_id):
                     restaurant_address=t['address'],
                     apikey=apikey
                 )
-                } км<br>'''
+                }<br>'''
                 for t in order['restaurants']
-            ], key=lambda t: re.search(r'(\d+\.?\d*)\s*км<', t).group(1)
+            ], key=lambda x: re.search(r'(\d+\.?\d*)\s*км', x).group(1) if re.search(r'(\d+\.?\d*)\s*км', x) else x
         )
     )
 
@@ -111,6 +113,7 @@ def get_or_create_place(object_id, apikey, address, existing_place=None, model_o
 
 def calculate_dist_places(
     order_id,
+    hash_order,
     order_coord,
     restaurant_id,
     restaurant_coord,
@@ -118,7 +121,9 @@ def calculate_dist_places(
     restaurant_address,
     apikey
 ):
-    if order_coord['lng'] and restaurant_coord['lng']:
+
+    hash_current_order = xxhash.xxh32(order_address.encode()).intdigest()
+    if order_coord['lng'] and restaurant_coord['lng'] and hash_current_order == hash_order:
         lng1, lat1, lng2, lat2 = [
             radians(i) for i in (
                 order_coord['lng'], order_coord['lat'],
@@ -137,15 +142,15 @@ def calculate_dist_places(
         if len(places) == 2:
             place1, place2 = places
         else:
-            existing_place = places[0] if len(places) == 1 else None
             try:
+                existing_place = places[0] if len(places) == 1 else None
                 place1 = get_or_create_place(order_id, apikey, order_address, existing_place)
                 place2 = get_or_create_place(restaurant_id, apikey, restaurant_address, existing_place, model_order=False)
-            except requests.exceptions.RequestException:
-                return "Ошибка определения координат"
+            except Exception:
+                return 'Ошибка определения координат'
         lng1, lat1, lng2, lat2 = [
                 radians(i) for i in (place1.lng, place1.lat, place2.lng, place2.lat)
             ]
     dist_rad = acos(sin(lat1) * sin(lat2) + cos(lat1) * cos(lat2) * cos(lng1 - lng2))
     dist_km = round(6371 * dist_rad, 2)
-    return dist_km
+    return f'{dist_km} км'

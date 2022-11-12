@@ -160,14 +160,14 @@ class OrderQuerySet(models.QuerySet):
             SELECT
                 id, order_id, restaurant_id, name, order_address,
                 restaurant_address, restaurant_order_id,
-                order_lng, order_lat, restaurant_lng, restaurant_lat
+                order_lng, order_lat, restaurant_lng, restaurant_lat, hash_order
             FROM
             (
             SELECT
                fr.id, restaurant_id, fo3.order_id, fr2.name, fo.address as order_address,
                fr2.address as restaurant_address, fo.restaurant_order_id, count(*) as count_restaurant,
                cp.lng order_lng, cp.lat order_lat,
-               cp1.lng restaurant_lng, cp1.lat restaurant_lat
+               cp1.lng restaurant_lng, cp1.lat restaurant_lat, cp.hash hash_order
             FROM foodcartapp_restaurantmenuitem fr
             JOIN foodcartapp_product fp2 ON fp2.id = fr.product_id
             JOIN foodcartapp_orderposition fo3 ON fp2.id = fo3.product_id
@@ -209,7 +209,8 @@ class OrderQuerySet(models.QuerySet):
                         order_id: {
                             'restaurants': restaurants,
                             'address': order.order_address,
-                            'coordinates': {'lng': order.order_lng, 'lat': order.order_lat}
+                            'coordinates': {'lng': order.order_lng, 'lat': order.order_lat},
+                            'hash': order.hash_order
                         },
                     }
                 )
@@ -225,7 +226,8 @@ class OrderQuerySet(models.QuerySet):
                                       'coordinates': {'lng': order.restaurant_lng, 'lat': order.restaurant_lat},
                                       'prepare': True}],
                                 'address': order.order_address,
-                                'coordinates': {'lng': order.order_lng, 'lat': order.order_lat}
+                                'coordinates': {'lng': order.order_lng, 'lat': order.order_lat},
+                                'hash': order.hash_order
                             }
                         }
                     )
