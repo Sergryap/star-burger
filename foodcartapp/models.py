@@ -130,7 +130,7 @@ class RestaurantMenuItem(models.Model):
 class OrderQuerySet(models.QuerySet):
 
     def add_total_cost(self):
-        cost = (
+        order_cost = (
             OrderPosition.objects
             .values('order_id')
             .annotate(total=Sum(F('price') * F('quantity')))
@@ -142,7 +142,7 @@ class OrderQuerySet(models.QuerySet):
                 'registrated_at',
                 'called_at',
                 'delivered_at'
-            ).annotate(total=Subquery(cost.values('total')))
+            ).annotate(total=Subquery(order_cost.values('total')))
         )
 
     def get_restaurants_available(self):

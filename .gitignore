@@ -144,3 +144,4 @@ cython_debug/
 .parcel-cache/
 .idea/
 /db_copy.sqlite3
+/old_code.py
