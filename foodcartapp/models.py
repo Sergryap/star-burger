@@ -4,6 +4,7 @@ from django.core.validators import MinValueValidator
 from django.db.models import Sum, F, OuterRef, Subquery, Prefetch, Count
 from phonenumber_field.modelfields import PhoneNumberField
 from django.utils import timezone
+from calcdistances.models import PlaceCoord
 
 
 class Restaurant(models.Model):
@@ -20,6 +21,13 @@ class Restaurant(models.Model):
         'контактный телефон',
         max_length=50,
         blank=True,
+    )
+    place = models.ForeignKey(
+        PlaceCoord,
+        related_name='restaurants',
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
     )
 
     class Meta:
@@ -151,17 +159,22 @@ class OrderQuerySet(models.QuerySet):
             '''
             SELECT
                 id, order_id, restaurant_id, name, order_address,
-                restaurant_address, restaurant_order_id
+                restaurant_address, restaurant_order_id,
+                order_lng, order_lat, restaurant_lng, restaurant_lat
             FROM
             (
             SELECT
                fr.id, restaurant_id, fo3.order_id, fr2.name, fo.address as order_address,
-               fr2.address as restaurant_address, fo.restaurant_order_id, count(*) as count_restaurant
+               fr2.address as restaurant_address, fo.restaurant_order_id, count(*) as count_restaurant,
+               cp.lng order_lng, cp.lat order_lat,
+               cp1.lng restaurant_lng, cp1.lat restaurant_lat
             FROM foodcartapp_restaurantmenuitem fr
             JOIN foodcartapp_product fp2 ON fp2.id = fr.product_id
             JOIN foodcartapp_orderposition fo3 ON fp2.id = fo3.product_id
             JOIN foodcartapp_restaurant fr2 on fr.restaurant_id = fr2.id
             JOIN foodcartapp_order fo on fo.id = fo3.order_id
+            JOIN calcdistances_placecoord cp on cp.id = fo.place_id
+            JOIN calcdistances_placecoord cp1 on cp1.id = fr2.place_id
             WHERE fr.availability = TRUE
             GROUP by fo3.order_id, restaurant_id
             HAVING count_restaurant = (
@@ -172,6 +185,7 @@ class OrderQuerySet(models.QuerySet):
                 )
             )
             GROUP BY order_id, restaurant_id
+            ORDER BY order_id
             '''
         )
         order_id = 0
@@ -182,26 +196,38 @@ class OrderQuerySet(models.QuerySet):
                 restaurants = []
             if not order.restaurant_order_id:
                 restaurants.append(
-                    {'restaurant': order.restaurant_order_id,
-                     'name': order.name,
-                     'address': order.restaurant_address}
+                    {
+                        'restaurant': order.restaurant_id,
+                        'name': order.name,
+                        'address': order.restaurant_address,
+                        'coordinates': {'lng': order.restaurant_lng, 'lat': order.restaurant_lat}
+                    }
                 )
 
                 restaurants_available.update(
-                    {order_id: {
-                        'restaurants': restaurants,
-                        'address': order.order_address}}
+                    {
+                        order_id: {
+                            'restaurants': restaurants,
+                            'address': order.order_address,
+                            'coordinates': {'lng': order.order_lng, 'lat': order.order_lat}
+                        },
+                    }
                 )
             else:
                 if order.restaurant_id == order.restaurant_order_id:
                     restaurants_available.update(
-                        {order_id: {
-                            'restaurants':
-                                [{'restaurant': order.restaurant_order_id,
-                                  'name': order.name,
-                                  'address': order.restaurant_address,
-                                  'prepare': True}],
-                            'address': order.order_address}}
+                        {
+                            order_id: {
+                                'restaurants':
+                                    [{'restaurant': order.restaurant_order_id,
+                                      'name': order.name,
+                                      'address': order.restaurant_address,
+                                      'coordinates': {'lng': order.restaurant_lng, 'lat': order.restaurant_lat},
+                                      'prepare': True}],
+                                'address': order.order_address,
+                                'coordinates': {'lng': order.order_lng, 'lat': order.order_lat}
+                            }
+                        }
                     )
 
         return restaurants_available
@@ -282,6 +308,13 @@ class Order(models.Model):
     comment = models.TextField(
         blank=True,
         verbose_name='комментарий'
+    )
+    place = models.ForeignKey(
+        PlaceCoord,
+        related_name='orders',
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
     )
 
     objects = OrderQuerySet.as_manager()

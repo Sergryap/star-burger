@@ -7,6 +7,7 @@ from environs import Env
 from calcdistances.models import PlaceCoord
 from django.utils.html import format_html
 from math import sin, cos, radians, acos
+from foodcartapp.models import Order, Restaurant
 
 register = template.Library()
 
@@ -17,15 +18,19 @@ def block_available_restaurants(value, arg):
     env.read_env()
     apikey = env('APIKEY')
     order = value[arg]
-    return create_info_restaurants_to_order(order, apikey)
+    return create_info_restaurants_to_order(order, apikey, order_id=arg)
 
 
-def create_info_restaurants_to_order(order, apikey):
+def create_info_restaurants_to_order(order, apikey, order_id):
     if order['restaurants'][0].get('prepare'):
         dist = calculate_dist_places(
-            order['address'],
-            order['restaurants'][0]['address'],
-            apikey
+            order_id=order_id,
+            order_coord=order['coordinates'],
+            restaurant_id=order['restaurants'][0]['restaurant'],
+            restaurant_coord=order['restaurants'][0]['coordinates'],
+            order_address=order['address'],
+            restaurant_address=order['restaurants'][0]['address'],
+            apikey=apikey
         )
         return format_html(
             f'''
@@ -38,9 +43,13 @@ def create_info_restaurants_to_order(order, apikey):
             [
                 f'''&#10004{t['name']} - {
                 calculate_dist_places(
-                    order['address'],
-                    t['address'],
-                    apikey
+                    order_id=order_id,
+                    order_coord=order['coordinates'],
+                    restaurant_id=t['restaurant'],
+                    restaurant_coord=t['coordinates'],
+                    order_address=order['address'],
+                    restaurant_address=t['address'],
+                    apikey=apikey
                 )
                 } км<br>'''
                 for t in order['restaurants']
@@ -77,7 +86,7 @@ def fetch_coordinates(apikey, address):
     return {'lng': float(lng), 'lat': float(lat), 'address': address}
 
 
-def get_or_create_place(apikey, address, existing_place=None):
+def get_or_create_place(object_id, apikey, address, existing_place=None, model_order=True):
     """
     Возвращает экземпляр класса PlaceOrder.
     Если он не существует в базе, то он создается и возвращается.
@@ -87,33 +96,56 @@ def get_or_create_place(apikey, address, existing_place=None):
     if existing_place and existing_place.hash == address_hash:
         return existing_place
     else:
-        return PlaceCoord.objects.create(
+        place = PlaceCoord.objects.create(
             **{'hash': address_hash, **fetch_coordinates(apikey, address)}
         )
+        if model_order:
+            order = Order.objects.get(pk=object_id)
+            place.orders.add(order)
+        else:
+            restaurant = Restaurant.objects.get(pk=object_id)
+            place.restaurants.add(restaurant)
+
+        return place
 
 
-def calculate_dist_places(address1, address2, apikey):
-    places = list(
-        PlaceCoord.objects
-        .defer('request_at')
-        .filter(
-            Q(hash=xxhash.xxh32(address1.encode()).intdigest()) |
-            Q(hash=xxhash.xxh32(address2.encode()).intdigest())
-        )
-    )
-    if len(places) == 2:
-        place1, place2 = places
-    else:
-        existing_place = places[0] if len(places) == 1 else None
-        place1 = get_or_create_place(apikey, address1, existing_place)
-        place2 = get_or_create_place(apikey, address2, existing_place)
-
-    try:
+def calculate_dist_places(
+    order_id,
+    order_coord,
+    restaurant_id,
+    restaurant_coord,
+    order_address,
+    restaurant_address,
+    apikey
+):
+    if order_coord['lng'] and restaurant_coord['lng']:
         lng1, lat1, lng2, lat2 = [
-            radians(i) for i in (place1.lng, place1.lat, place2.lng, place2.lat)
+            radians(i) for i in (
+                order_coord['lng'], order_coord['lat'],
+                restaurant_coord['lng'], restaurant_coord['lat']
+            )
         ]
-        dist_rad = acos(sin(lat1) * sin(lat2) + cos(lat1) * cos(lat2) * cos(lng1 - lng2))
-        dist_km = round(6371 * dist_rad, 2)
-        return dist_km
-    except requests.exceptions.RequestException:
-        return "Ошибка определения координат"
+    else:
+        places = list(
+            PlaceCoord.objects
+            .defer('request_at')
+            .filter(
+                Q(hash=xxhash.xxh32(order_address.encode()).intdigest()) |
+                Q(hash=xxhash.xxh32(restaurant_address.encode()).intdigest())
+            )
+        )
+        if len(places) == 2:
+            place1, place2 = places
+        else:
+            existing_place = places[0] if len(places) == 1 else None
+            try:
+                place1 = get_or_create_place(order_id, apikey, order_address, existing_place)
+                place2 = get_or_create_place(restaurant_id, apikey, restaurant_address, existing_place, model_order=False)
+            except requests.exceptions.RequestException:
+                return "Ошибка определения координат"
+        lng1, lat1, lng2, lat2 = [
+                radians(i) for i in (place1.lng, place1.lat, place2.lng, place2.lat)
+            ]
+    dist_rad = acos(sin(lat1) * sin(lat2) + cos(lat1) * cos(lat2) * cos(lng1 - lng2))
+    dist_km = round(6371 * dist_rad, 2)
+    return dist_km
