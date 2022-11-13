@@ -197,7 +197,7 @@ class OrderQuerySet(models.QuerySet):
             if not order.restaurant_order_id:
                 restaurants.append(
                     {
-                        'restaurant': order.restaurant_id,
+                        'restaurant_id': order.restaurant_id,
                         'name': order.name,
                         'address': order.restaurant_address,
                         'coordinates': {'lng': order.restaurant_lng, 'lat': order.restaurant_lat}
@@ -220,7 +220,7 @@ class OrderQuerySet(models.QuerySet):
                         {
                             order_id: {
                                 'restaurants':
-                                    [{'restaurant': order.restaurant_order_id,
+                                    [{'restaurant_id': order.restaurant_order_id,
                                       'name': order.name,
                                       'address': order.restaurant_address,
                                       'coordinates': {'lng': order.restaurant_lng, 'lat': order.restaurant_lat},

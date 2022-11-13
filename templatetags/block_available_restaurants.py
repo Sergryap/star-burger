@@ -30,7 +30,7 @@ def create_info_restaurants_to_order(order, apikey, order_id):
             data={
                 'hash_order': order['hash'],
                 'order_coord': order['coordinates'],
-                'restaurant_id': order['restaurants'][0]['restaurant'],
+                'restaurant_id': order['restaurants'][0]['restaurant_id'],
                 'restaurant_coord': order['restaurants'][0]['coordinates'],
                 'order_address': order['address'],
                 'restaurant_address': order['restaurants'][0]['address']
@@ -52,7 +52,7 @@ def create_info_restaurants_to_order(order, apikey, order_id):
                     data={
                         'hash_order': order['hash'],
                         'order_coord': order['coordinates'],
-                        'restaurant_id': restaurant['restaurant'],
+                        'restaurant_id': restaurant['restaurant_id'],
                         'restaurant_coord': restaurant['coordinates'],
                         'order_address': order['address'],
                         'restaurant_address': restaurant['address']
