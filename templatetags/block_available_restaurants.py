@@ -2,7 +2,7 @@ import re
 import requests
 import xxhash
 from django import template
-from django.db.models import Q
+from django.db.models import Value as V
 from environs import Env
 from calcdistances.models import PlaceCoord
 from django.utils.html import format_html
@@ -23,15 +23,18 @@ def block_available_restaurants(value, arg):
 
 def create_info_restaurants_to_order(order, apikey, order_id):
     if order['restaurants'][0].get('prepare'):
+
         dist = calculate_dist_places(
             order_id=order_id,
-            hash_order=order['hash'],
-            order_coord=order['coordinates'],
-            restaurant_id=order['restaurants'][0]['restaurant'],
-            restaurant_coord=order['restaurants'][0]['coordinates'],
-            order_address=order['address'],
-            restaurant_address=order['restaurants'][0]['address'],
-            apikey=apikey
+            apikey=apikey,
+            data={
+                'hash_order': order['hash'],
+                'order_coord': order['coordinates'],
+                'restaurant_id': order['restaurants'][0]['restaurant'],
+                'restaurant_coord': order['restaurants'][0]['coordinates'],
+                'order_address': order['address'],
+                'restaurant_address': order['restaurants'][0]['address']
+            }
         )
         return format_html(
             f'''
@@ -42,19 +45,21 @@ def create_info_restaurants_to_order(order, apikey, order_id):
     text_html = ''.join(
         sorted(
             [
-                f'''&#10004{t['name']} - {
+                f'''&#10004{restaurant['name']} - {
                 calculate_dist_places(
                     order_id=order_id,
-                    hash_order=order['hash'],
-                    order_coord=order['coordinates'],
-                    restaurant_id=t['restaurant'],
-                    restaurant_coord=t['coordinates'],
-                    order_address=order['address'],
-                    restaurant_address=t['address'],
-                    apikey=apikey
+                    apikey=apikey,
+                    data={
+                        'hash_order': order['hash'],
+                        'order_coord': order['coordinates'],
+                        'restaurant_id': restaurant['restaurant'],
+                        'restaurant_coord': restaurant['coordinates'],
+                        'order_address': order['address'],
+                        'restaurant_address': restaurant['address']
+                    }
                 )
                 }<br>'''
-                for t in order['restaurants']
+                for restaurant in order['restaurants']
             ], key=lambda x: re.search(r'(\d+\.?\d*)\s*км', x).group(1) if re.search(r'(\d+\.?\d*)\s*км', x) else x
         )
     )
@@ -111,16 +116,13 @@ def get_or_create_place(object_id, apikey, address, existing_place=None, model_o
         return place
 
 
-def calculate_dist_places(
-    order_id,
-    hash_order,
-    order_coord,
-    restaurant_id,
-    restaurant_coord,
-    order_address,
-    restaurant_address,
-    apikey
-):
+def calculate_dist_places(order_id, data, apikey):
+    hash_order = data['hash_order']
+    order_coord = data['order_coord']
+    restaurant_id = data['restaurant_id']
+    restaurant_coord = data['restaurant_coord']
+    order_address = data['order_address']
+    restaurant_address = data['restaurant_address']
 
     hash_current_order = xxhash.xxh32(order_address.encode()).intdigest()
     if order_coord['lng'] and restaurant_coord['lng'] and hash_current_order == hash_order:
@@ -134,22 +136,34 @@ def calculate_dist_places(
         places = list(
             PlaceCoord.objects
             .defer('request_at')
-            .filter(
-                Q(hash=xxhash.xxh32(order_address.encode()).intdigest()) |
-                Q(hash=xxhash.xxh32(restaurant_address.encode()).intdigest())
+            .filter(hash=xxhash.xxh32(order_address.encode()).intdigest())
+            .annotate(number=V(1))
+            .union(
+                PlaceCoord.objects
+                .defer('request_at')
+                .filter(hash=xxhash.xxh32(restaurant_address.encode()).intdigest())
+                .annotate(number=V(2))
             )
+            .order_by('number')
         )
         if len(places) == 2:
-            place1, place2 = places
+            place_order, place_restaurant = places
         else:
             try:
                 existing_place = places[0] if len(places) == 1 else None
-                place1 = get_or_create_place(order_id, apikey, order_address, existing_place)
-                place2 = get_or_create_place(restaurant_id, apikey, restaurant_address, existing_place, model_order=False)
+                place_order = get_or_create_place(order_id, apikey, order_address, existing_place)
+                place_restaurant = get_or_create_place(restaurant_id, apikey,
+                                                       restaurant_address, existing_place, model_order=False)
             except Exception:
                 return 'Ошибка определения координат'
+
+        if hash_current_order != hash_order:
+            order_current = Order.objects.get(pk=order_id)
+            order_current.place_id = place_order.id
+            order_current.save()
+
         lng1, lat1, lng2, lat2 = [
-                radians(i) for i in (place1.lng, place1.lat, place2.lng, place2.lat)
+                radians(i) for i in (place_order.lng, place_order.lat, place_restaurant.lng, place_restaurant.lat)
             ]
     dist_rad = acos(sin(lat1) * sin(lat2) + cos(lat1) * cos(lat2) * cos(lng1 - lng2))
     dist_km = round(6371 * dist_rad, 2)
