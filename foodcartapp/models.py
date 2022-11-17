@@ -175,7 +175,7 @@ class OrderQuerySet(models.QuerySet):
             GROUP by fo3.order_id, restaurant_id
             HAVING count_restaurant = (
                 SELECT COUNT(*)
-                from foodcartapp_orderposition fo4
+                FROM foodcartapp_orderposition fo4
                 GROUP BY fo4.order_id
                 HAVING fo4.order_id = fo3.order_id
                 )
@@ -197,7 +197,6 @@ class OrderQuerySet(models.QuerySet):
                         'coordinates': {'lng': order.restaurant_lng, 'lat': order.restaurant_lat}
                     }
                 )
-
                 restaurants_available.update(
                     {
                         order_id: {
@@ -208,23 +207,22 @@ class OrderQuerySet(models.QuerySet):
                         },
                     }
                 )
-            else:
-                if order.restaurant_id == order.restaurant_order_id:
-                    restaurants_available.update(
-                        {
-                            order_id: {
-                                'restaurants':
-                                    [{'restaurant_id': order.restaurant_order_id,
-                                      'name': order.name,
-                                      'address': order.restaurant_address,
-                                      'coordinates': {'lng': order.restaurant_lng, 'lat': order.restaurant_lat},
-                                      'prepare': True}],
-                                'address': order.order_address,
-                                'coordinates': {'lng': order.order_lng, 'lat': order.order_lat},
-                                'hash': order.hash_order
-                            }
+            elif order.restaurant_id == order.restaurant_order_id:
+                restaurants_available.update(
+                    {
+                        order_id: {
+                            'restaurants':
+                                [{'restaurant_id': order.restaurant_order_id,
+                                  'name': order.name,
+                                  'address': order.restaurant_address,
+                                  'coordinates': {'lng': order.restaurant_lng, 'lat': order.restaurant_lat},
+                                  'prepare': True}],
+                            'address': order.order_address,
+                            'coordinates': {'lng': order.order_lng, 'lat': order.order_lat},
+                            'hash': order.hash_order
                         }
-                    )
+                    }
+                )
 
         return restaurants_available
 
@@ -324,6 +322,21 @@ class Order(models.Model):
         return f'{self.firstname} {self.lastname}: {self.address}'
 
 
+class OrderPositionQuerySet(models.QuerySet):
+
+    def inner_join(
+        self, query,
+        field1: str, field2: str,
+        values1: list, values2: list
+    ):
+        query_join = []
+        for row1 in self.values(*values1):
+            for row2 in query.values(*values2):
+                if row1[field1] == row2[field2]:
+                    query_join.append(row1 | row2)
+        return query_join
+
+
 class OrderPosition(models.Model):
     product = models.ForeignKey(
         Product,
@@ -347,6 +360,8 @@ class OrderPosition(models.Model):
         decimal_places=2,
         validators=[MinValueValidator(0)]
     )
+
+    objects = OrderPositionQuerySet.as_manager()
 
     class Meta:
         ordering = ['order', 'product']
