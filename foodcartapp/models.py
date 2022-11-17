@@ -184,7 +184,7 @@ class OrderQuerySet(models.QuerySet):
         )
         order_id = 0
         restaurants = []
-        for order in list(orders_restaurant):
+        for order in orders_restaurant:
             if order.order_id != order_id:
                 order_id = order.order_id
                 restaurants = []
