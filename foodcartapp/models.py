@@ -322,21 +322,6 @@ class Order(models.Model):
         return f'{self.firstname} {self.lastname}: {self.address}'
 
 
-class OrderPositionQuerySet(models.QuerySet):
-
-    def inner_join(
-        self, query,
-        field1: str, field2: str,
-        values1: list, values2: list
-    ):
-        query_join = []
-        for row1 in self.values(*values1):
-            for row2 in query.values(*values2):
-                if row1[field1] == row2[field2]:
-                    query_join.append(row1 | row2)
-        return query_join
-
-
 class OrderPosition(models.Model):
     product = models.ForeignKey(
         Product,
@@ -360,8 +345,6 @@ class OrderPosition(models.Model):
         decimal_places=2,
         validators=[MinValueValidator(0)]
     )
-
-    objects = OrderPositionQuerySet.as_manager()
 
     class Meta:
         ordering = ['order', 'product']
