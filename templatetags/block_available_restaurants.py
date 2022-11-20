@@ -23,7 +23,6 @@ def block_available_restaurants(value, arg):
 
 def create_info_restaurants_to_order(order, apikey, order_id):
     if order['restaurants'][0].get('prepare'):
-
         dist = calculate_dist_places(
             order_id=order_id,
             apikey=apikey,
@@ -163,8 +162,8 @@ def calculate_dist_places(order_id, data, apikey):
             order_current.save()
 
         lng1, lat1, lng2, lat2 = [
-                radians(i) for i in (place_order.lng, place_order.lat, place_restaurant.lng, place_restaurant.lat)
-            ]
+            radians(i) for i in (place_order.lng, place_order.lat, place_restaurant.lng, place_restaurant.lat)
+        ]
     dist_rad = acos(sin(lat1) * sin(lat2) + cos(lat1) * cos(lat2) * cos(lng1 - lng2))
     dist_km = round(6371 * dist_rad, 2)
     return f'{dist_km} км'
