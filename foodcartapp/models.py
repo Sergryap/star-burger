@@ -144,14 +144,7 @@ class OrderQuerySet(models.QuerySet):
             .annotate(total=Sum(F('price') * F('quantity')))
             .filter(order=OuterRef('pk'))
         )
-        return (
-            self.defer(
-                'restaurant_order',
-                'registrated_at',
-                'called_at',
-                'delivered_at'
-            ).annotate(total=Subquery(order_cost.values('total')))
-        )
+        return self.annotate(total=Subquery(order_cost.values('total')))
 
     def get_restaurants_available(self):
         restaurants_available = {}
