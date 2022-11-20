@@ -1,7 +1,7 @@
 from django.utils.translation import gettext_lazy as _
 from django.db import models
 from django.core.validators import MinValueValidator
-from django.db.models import Sum, F, OuterRef, Subquery, Prefetch, Count
+from django.db.models import Sum, F, OuterRef
 from phonenumber_field.modelfields import PhoneNumberField
 from django.utils import timezone
 from calcdistances.models import PlaceCoord
@@ -144,7 +144,7 @@ class OrderQuerySet(models.QuerySet):
             .annotate(total=Sum(F('price') * F('quantity')))
             .filter(order=OuterRef('pk'))
         )
-        return self.annotate(total=Subquery(order_cost.values('total')))
+        return self.annotate(total=order_cost.values('total'))
 
     def get_restaurants_available(self):
         restaurants_available = {}
