@@ -3,20 +3,18 @@ import requests
 import xxhash
 from django import template
 from django.db.models import Value as V
-from environs import Env
 from calcdistances.models import PlaceCoord
 from django.utils.html import format_html
 from math import sin, cos, radians, acos
 from foodcartapp.models import Order, Restaurant
+from star_burger.settings import GEO_TOKEN
 
 register = template.Library()
 
 
 @register.filter
 def block_available_restaurants(value, arg):
-    env = Env()
-    env.read_env()
-    apikey = env('APIKEY')
+    apikey = GEO_TOKEN
     order = value[arg]
     return create_info_restaurants_to_order(order, apikey, order_id=arg)
 
