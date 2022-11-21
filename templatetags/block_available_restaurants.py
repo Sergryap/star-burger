@@ -13,17 +13,13 @@ register = template.Library()
 
 
 @register.filter
-def block_available_restaurants(value, arg):
-    apikey = GEO_TOKEN
+def create_block_available_restaurants(value, arg):
+    order_id = arg
     order = value[arg]
-    return create_info_restaurants_to_order(order, apikey, order_id=arg)
-
-
-def create_info_restaurants_to_order(order, apikey, order_id):
     if order['restaurants'][0].get('prepare'):
         dist = calculate_dist_places(
             order_id=order_id,
-            apikey=apikey,
+            apikey=GEO_TOKEN,
             data={
                 'hash_order': order['hash'],
                 'order_coord': order['coordinates'],
@@ -45,7 +41,7 @@ def create_info_restaurants_to_order(order, apikey, order_id):
                 f'''&#10004{restaurant['name']} - {
                 calculate_dist_places(
                     order_id=order_id,
-                    apikey=apikey,
+                    apikey=GEO_TOKEN,
                     data={
                         'hash_order': order['hash'],
                         'order_coord': order['coordinates'],
