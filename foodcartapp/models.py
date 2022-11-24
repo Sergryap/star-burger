@@ -156,7 +156,7 @@ class OrderQuerySet(models.QuerySet):
                 fo.restaurant_order_id, count(*) as count_restaurant,
                 cp.lng order_lng, cp.lat order_lat,
                 cp1.lng restaurant_lng, cp1.lat restaurant_lat,
-                cp.hash hash_order
+                cp.hash hash_order, cp1.hash hash_restaurant
             FROM foodcartapp_restaurantmenuitem fr
                 JOIN foodcartapp_product fp2 ON fp2.id = fr.product_id
                 JOIN foodcartapp_orderposition fo3 ON fp2.id = fo3.product_id
@@ -187,7 +187,8 @@ class OrderQuerySet(models.QuerySet):
                         'restaurant_id': order.restaurant_id,
                         'name': order.name,
                         'address': order.restaurant_address,
-                        'coordinates': {'lng': order.restaurant_lng, 'lat': order.restaurant_lat}
+                        'coordinates': {'lng': order.restaurant_lng, 'lat': order.restaurant_lat},
+                        'hash': order.hash_restaurant
                     }
                 )
                 restaurants_available.update(
@@ -210,6 +211,7 @@ class OrderQuerySet(models.QuerySet):
                                   'name': order.name,
                                   'address': order.restaurant_address,
                                   'coordinates': {'lng': order.restaurant_lng, 'lat': order.restaurant_lat},
+                                  'hash': order.hash_restaurant,
                                   'prepare': True}],
                             'address': order.order_address,
                             'coordinates': {'lng': order.order_lng, 'lat': order.order_lat},
