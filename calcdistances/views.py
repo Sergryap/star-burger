@@ -79,6 +79,7 @@ def fetch_coordinates(apikey, address):
 def calculate_dist_places(order, restaurant, apikey):
     hash_current_order = xxhash.xxh32(order['address'].encode()).intdigest()
     hash_current_restaurant = xxhash.xxh32(restaurant['address'].encode()).intdigest()
+    earth_radius = 6371
 
     if hash_current_order == order['hash'] and hash_current_restaurant == restaurant['hash']:
         order_lng = order['coordinates']['lng']
@@ -113,6 +114,6 @@ def calculate_dist_places(order, restaurant, apikey):
             radians(i) for i in (order_lng, order_lat, restaurant_lng, restaurant_lat)
         ]
     dist_rad = acos(sin(lat1) * sin(lat2) + cos(lat1) * cos(lat2) * cos(lng1 - lng2))
-    dist_km = round(6371 * dist_rad, 2)
+    dist_km = round(earth_radius * dist_rad, 2)
 
     return f'{dist_km} км'
