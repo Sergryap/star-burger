@@ -196,7 +196,8 @@ class OrderQuerySet(models.QuerySet):
                             'restaurants': restaurants,
                             'address': order.order_address,
                             'coordinates': {'lng': order.order_lng, 'lat': order.order_lat},
-                            'hash': order.hash_order
+                            'hash': order.hash_order,
+                            'id': order_id
                         },
                     }
                 )
@@ -212,7 +213,8 @@ class OrderQuerySet(models.QuerySet):
                                   'prepare': True}],
                             'address': order.order_address,
                             'coordinates': {'lng': order.order_lng, 'lat': order.order_lat},
-                            'hash': order.hash_order
+                            'hash': order.hash_order,
+                            'id': order_id
                         }
                     }
                 )
