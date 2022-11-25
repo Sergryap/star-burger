@@ -94,11 +94,10 @@ def calculate_dist_and_create_places(order, restaurant, apikey):
             defaults=fetch_coordinates(apikey, order['address'])
         )
         # Назначаем place_id для order:
-        if hash_current_order != order['hash']:
-            order_current = Order.objects.get(pk=order['id'])
-            order_current.place_id = place_order.id
-            order_current.save()
-            order['hash'] = hash_current_order
+        order_current = Order.objects.get(pk=order['id'])
+        order_current.place_id = place_order.id
+        order_current.save()
+        order['hash'] = hash_current_order
         order_lng = place_order.lng
         order_lat = place_order.lat
 
@@ -112,11 +111,10 @@ def calculate_dist_and_create_places(order, restaurant, apikey):
             defaults=fetch_coordinates(apikey, restaurant['address'])
         )
         # Назначаем place_id для restaurant
-        if hash_current_restaurant != restaurant['hash']:
-            restaurant_current = Restaurant.objects.get(pk=restaurant['restaurant_id'])
-            restaurant_current.place_id = place_restaurant.id
-            restaurant_current.save()
-            restaurant['hash'] = hash_current_restaurant
+        restaurant_current = Restaurant.objects.get(pk=restaurant['restaurant_id'])
+        restaurant_current.place_id = place_restaurant.id
+        restaurant_current.save()
+        restaurant['hash'] = hash_current_restaurant
         restaurant_lng = place_restaurant.lng
         restaurant_lat = place_restaurant.lat
 
