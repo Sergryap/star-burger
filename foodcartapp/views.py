@@ -98,6 +98,15 @@ def register_order(request):
         firstname=order_data['firstname'],
         lastname=order_data['lastname'],
     )
+
+    hash_order = xxhash.xxh32(order_data['address'].encode()).intdigest()
+    place_order, created = PlaceCoord.objects.get_or_create(
+        hash=hash_order,
+        defaults=fetch_coordinates(apikey=settings.GEO_TOKEN, address=order_data['address'])
+    )
+    order.place_id = place_order.id
+    order.save()
+
     positions = []
     for position in order_data['products']:
         product = Product.objects.get(pk=position['product'])
