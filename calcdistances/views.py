@@ -24,7 +24,7 @@ def create_all_blocks_available_restaurants(restaurants_available):
 
 def create_block_available_restaurants(order):
     if order['restaurants'][0].get('prepare'):
-        dist = calculate_dist_places(
+        dist = calculate_dist_and_create_places(
             order=order,
             restaurant=order['restaurants'][0],
             apikey=settings.GEO_TOKEN
@@ -40,7 +40,7 @@ def create_block_available_restaurants(order):
         sorted(
             [
                 f'''&#10004{restaurant['name']} - {
-                calculate_dist_places(
+                calculate_dist_and_create_places(
                     order=order,
                     restaurant=restaurant,
                     apikey=settings.GEO_TOKEN
@@ -80,7 +80,7 @@ def fetch_coordinates(apikey, address):
     return {'lng': float(lng), 'lat': float(lat), 'address': address}
 
 
-def calculate_dist_places(order, restaurant, apikey):
+def calculate_dist_and_create_places(order, restaurant, apikey):
     hash_current_order = xxhash.xxh32(order['address'].encode()).intdigest()
     hash_current_restaurant = xxhash.xxh32(restaurant['address'].encode()).intdigest() if restaurant['address'] else 0
 

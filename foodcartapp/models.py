@@ -1,9 +1,10 @@
-from django.utils.translation import gettext_lazy as _
 from django.db import models
-from django.core.validators import MinValueValidator
-from django.db.models import Sum, F, OuterRef
-from phonenumber_field.modelfields import PhoneNumberField
+from django.db.models.functions import Coalesce, Cast
+from django.db.models import Sum, F, OuterRef, Value
 from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
+from django.core.validators import MinValueValidator
+from phonenumber_field.modelfields import PhoneNumberField
 from calcdistances.models import PlaceCoord
 
 
@@ -144,7 +145,12 @@ class OrderQuerySet(models.QuerySet):
             .annotate(total=Sum(F('price') * F('quantity')))
             .filter(order=OuterRef('pk'))
         )
-        return self.annotate(total=order_cost.values('total'))
+        return self.annotate(
+            total=Coalesce(
+                Cast(order_cost.values('total'), models.CharField()),
+                Value('Нет данных')
+            )
+        )
 
     def get_restaurants_available(self):
         restaurants_available = {}
