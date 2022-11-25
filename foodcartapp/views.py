@@ -1,6 +1,11 @@
+import xxhash
+from django.conf import settings
 from django.http import JsonResponse
 from django.templatetags.static import static
 from rest_framework.response import Response
+
+from calcdistances.models import PlaceCoord
+from calcdistances.views import fetch_coordinates
 from foodcartapp.models import Product, Order, OrderPosition
 from rest_framework.decorators import api_view
 from rest_framework import status

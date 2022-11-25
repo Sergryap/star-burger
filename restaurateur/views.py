@@ -100,9 +100,5 @@ def view_orders(request):
     blocks_restaurants = create_all_blocks_available_restaurants(restaurants_available)
     return render(request,
                   template_name='order_items.html',
-                  context={
-                      'order_items': orders,
-                      'restaurants_available': restaurants_available,
-                      'blocks_restaurants': blocks_restaurants
-                  }
+                  context={'order_items': orders, 'blocks_restaurants': blocks_restaurants}
                   )

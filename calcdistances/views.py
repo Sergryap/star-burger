@@ -1,7 +1,6 @@
 import re
 import requests
 import xxhash
-from django.db.models import Value as V
 from calcdistances.models import PlaceCoord
 from django.utils.html import format_html
 from math import sin, cos, radians, acos
@@ -12,9 +11,14 @@ from django.conf import settings
 def create_all_blocks_available_restaurants(restaurants_available):
     all_blocks_available_restaurants = {}
     for order_id, order in restaurants_available.items():
-        all_blocks_available_restaurants.update(
-            {order_id: create_block_available_restaurants(order)}
-        )
+        try:
+            all_blocks_available_restaurants.update(
+                {order_id: create_block_available_restaurants(order)}
+            )
+        except requests.exceptions.HTTPError:
+            all_blocks_available_restaurants.update(
+                {order_id: 'Нет данных'}
+            )
     return all_blocks_available_restaurants
 
 
@@ -78,42 +82,48 @@ def fetch_coordinates(apikey, address):
 
 def calculate_dist_places(order, restaurant, apikey):
     hash_current_order = xxhash.xxh32(order['address'].encode()).intdigest()
-    hash_current_restaurant = xxhash.xxh32(restaurant['address'].encode()).intdigest()
-    earth_radius = 6371
+    hash_current_restaurant = xxhash.xxh32(restaurant['address'].encode()).intdigest() if restaurant['address'] else 0
 
-    if hash_current_order == order['hash'] and hash_current_restaurant == restaurant['hash']:
+    # Проверяем было ли изменение адреса ордера или добавление нового:
+    if hash_current_order == order['hash']:
         order_lng = order['coordinates']['lng']
         order_lat = order['coordinates']['lat']
-        restaurant_lng = restaurant['coordinates']['lng']
-        restaurant_lat = restaurant['coordinates']['lat']
     else:
         place_order, created = PlaceCoord.objects.get_or_create(
             hash=hash_current_order,
             defaults=fetch_coordinates(apikey, order['address'])
         )
-        place_restaurant, created = PlaceCoord.objects.get_or_create(
-            hash=xxhash.xxh32(restaurant['address'].encode()).intdigest(),
-            defaults=fetch_coordinates(apikey, restaurant['address'])
-        )
-        order_lng = place_order.lng
-        order_lat = place_order.lat
-        restaurant_lng = place_restaurant.lng
-        restaurant_lat = place_restaurant.lat
+        # Назначаем place_id для order:
         if hash_current_order != order['hash']:
             order_current = Order.objects.get(pk=order['id'])
             order_current.place_id = place_order.id
             order_current.save()
             order['hash'] = hash_current_order
+        order_lng = place_order.lng
+        order_lat = place_order.lat
+
+    # Проверяем было ли изменение адреса ресторана или добавление нового:
+    if hash_current_restaurant == restaurant['hash']:
+        restaurant_lng = restaurant['coordinates']['lng']
+        restaurant_lat = restaurant['coordinates']['lat']
+    else:
+        place_restaurant, created = PlaceCoord.objects.get_or_create(
+            hash=hash_current_restaurant,
+            defaults=fetch_coordinates(apikey, restaurant['address'])
+        )
+        # Назначаем place_id для restaurant
         if hash_current_restaurant != restaurant['hash']:
             restaurant_current = Restaurant.objects.get(pk=restaurant['restaurant_id'])
             restaurant_current.place_id = place_restaurant.id
             restaurant_current.save()
             restaurant['hash'] = hash_current_restaurant
+        restaurant_lng = place_restaurant.lng
+        restaurant_lat = place_restaurant.lat
 
     lng1, lat1, lng2, lat2 = [
             radians(i) for i in (order_lng, order_lat, restaurant_lng, restaurant_lat)
         ]
     dist_rad = acos(sin(lat1) * sin(lat2) + cos(lat1) * cos(lat2) * cos(lng1 - lng2))
-    dist_km = round(earth_radius * dist_rad, 2)
+    dist_km = round(settings.EARTH_RADIUS * dist_rad, 2)
 
     return f'{dist_km} км'

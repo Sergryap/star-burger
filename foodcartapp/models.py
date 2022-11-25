@@ -151,28 +151,29 @@ class OrderQuerySet(models.QuerySet):
         orders_restaurant = self.raw(
             '''
             SELECT
-                fr.id, restaurant_id, fo3.order_id, fr2.name,
-                fo.address as order_address, fr2.address as restaurant_address,
-                fo.restaurant_order_id, count(*) as count_restaurant,
-                cp.lng order_lng, cp.lat order_lat,
-                cp1.lng restaurant_lng, cp1.lat restaurant_lat,
-                cp.hash hash_order, cp1.hash hash_restaurant
-            FROM foodcartapp_restaurantmenuitem fr
-                JOIN foodcartapp_product fp2 ON fp2.id = fr.product_id
-                JOIN foodcartapp_orderposition fo3 ON fp2.id = fo3.product_id
-                JOIN foodcartapp_restaurant fr2 on fr.restaurant_id = fr2.id
-                JOIN foodcartapp_order fo on fo.id = fo3.order_id
-                JOIN calcdistances_placecoord cp on cp.id = fo.place_id
-                JOIN calcdistances_placecoord cp1 on cp1.id = fr2.place_id
-            WHERE fr.availability = TRUE
-            GROUP by fo3.order_id, restaurant_id
-            HAVING count_restaurant = (
-                SELECT COUNT(*)
-                FROM foodcartapp_orderposition fo4
-                GROUP BY fo4.order_id
-                HAVING fo4.order_id = fo3.order_id
-                )
-            ORDER BY order_id
+               fr.id, restaurant_id, fo.id as order_id, fr2.name, fo.address as order_address,
+               fr2.address as restaurant_address, fo.restaurant_order_id, COUNT(*) as count_restaurant,
+               cp.lng order_lng, cp.lat order_lat,
+               cp1.lng restaurant_lng, cp1.lat restaurant_lat,
+               cp.hash hash_order, cp1.hash hash_restaurant
+            FROM foodcartapp_order fo
+            LEFT JOIN foodcartapp_orderposition fo3 ON fo.id = fo3.order_id
+            LEFT JOIN foodcartapp_product fp2 ON fp2.id = fo3.product_id
+            LEFT JOIN foodcartapp_restaurantmenuitem fr ON fr.product_id = fp2.id
+            LEFT JOIN foodcartapp_restaurant fr2 ON fr2.id = fr.restaurant_id
+            LEFT JOIN calcdistances_placecoord cp ON cp.id = fo.place_id
+            LEFT JOIN calcdistances_placecoord cp1 ON cp1.id = fr2.place_id
+            WHERE fr.availability = TRUE OR fo3.order_id ISNULL
+            GROUP by fo.id, restaurant_id
+            HAVING
+                count_restaurant = (
+                    SELECT COUNT(*)
+                    from foodcartapp_orderposition fo4
+                    GROUP BY fo4.order_id
+                    HAVING fo4.order_id = fo3.order_id
+                    )
+                OR fo3.order_id ISNULL
+            ORDER BY fo.id
             '''
         )
         order_id = 0
