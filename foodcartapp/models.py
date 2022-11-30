@@ -159,9 +159,19 @@ class OrderQuerySet(models.QuerySet):
             SELECT
                fr.id, restaurant_id, fo.id as order_id, fr2.name, fo.address as order_address,
                fr2.address as restaurant_address, fo.restaurant_order_id, COUNT(*) as count_restaurant,
-               cp.lng order_lng, cp.lat order_lat,
-               cp1.lng restaurant_lng, cp1.lat restaurant_lat,
-               cp.hash hash_order, cp1.hash hash_restaurant
+               cp.lng order_lng, cp.lat order_lat, cp1.lng restaurant_lng, cp1.lat restaurant_lat,
+               cp.hash hash_order, cp1.hash hash_restaurant,
+               fo.status, fo.payment_method,
+               fo.firstname as first_name, fo.lastname as last_name,
+               fo.phonenumber as phone, fo.comment as order_comment,
+               round (
+               (acos(sin(cp.lat*pi()/180)*sin(cp1.lat*pi()/180)
+                   +cos(cp.lat*pi()/180)*cos(cp1.lat*pi()/180)*cos(cp.lng*pi()/180
+                   -cp1.lng*pi()/180)))*6371, 2) as dist,
+               (SELECT SUM(quantity*price)
+                FROM foodcartapp_orderposition
+                GROUP BY order_id
+                HAVING order_id = fo.id) as total_cost
             FROM foodcartapp_order fo
             LEFT JOIN foodcartapp_orderposition fo3 ON fo.id = fo3.order_id
             LEFT JOIN foodcartapp_product fp2 ON fp2.id = fo3.product_id
@@ -169,7 +179,7 @@ class OrderQuerySet(models.QuerySet):
             LEFT JOIN foodcartapp_restaurant fr2 ON fr2.id = fr.restaurant_id
             LEFT JOIN calcdistances_placecoord cp ON cp.id = fo.place_id
             LEFT JOIN calcdistances_placecoord cp1 ON cp1.id = fr2.place_id
-            WHERE fr.availability = TRUE OR fo3.order_id ISNULL
+            WHERE (fr.availability = TRUE OR fo3.order_id ISNULL)  and fo.status != 'OK'
             GROUP by fo.id, restaurant_id
             HAVING
                 count_restaurant = (
@@ -179,7 +189,7 @@ class OrderQuerySet(models.QuerySet):
                     HAVING fo4.order_id = fo3.order_id
                     )
                 OR fo3.order_id ISNULL
-            ORDER BY fo.id
+            ORDER BY fo.id, dist
             '''
         )
         order_id = 0
@@ -194,8 +204,9 @@ class OrderQuerySet(models.QuerySet):
                         'restaurant_id': order.restaurant_id,
                         'name': order.name,
                         'address': order.restaurant_address,
-                        'coordinates': {'lng': order.restaurant_lng, 'lat': order.restaurant_lat},
-                        'hash': order.hash_restaurant
+                        'hash': order.hash_restaurant,
+                        'dist': order.dist,
+
                     }
                 )
                 restaurants_available.update(
@@ -203,9 +214,15 @@ class OrderQuerySet(models.QuerySet):
                         order_id: {
                             'restaurants': restaurants,
                             'address': order.order_address,
-                            'coordinates': {'lng': order.order_lng, 'lat': order.order_lat},
                             'hash': order.hash_order,
-                            'id': order_id
+                            'pk': order_id,
+                            'status': order.status,
+                            'payment_method': order.payment_method,
+                            'phone': order.phone,
+                            'client': f'{order.first_name} {order.last_name}',
+                            'total_cost': order.total_cost,
+                            'comment': order.order_comment,
+                            'prepare': False,
                         },
                     }
                 )
@@ -217,13 +234,18 @@ class OrderQuerySet(models.QuerySet):
                                 [{'restaurant_id': order.restaurant_order_id,
                                   'name': order.name,
                                   'address': order.restaurant_address,
-                                  'coordinates': {'lng': order.restaurant_lng, 'lat': order.restaurant_lat},
                                   'hash': order.hash_restaurant,
-                                  'prepare': True}],
+                                  'dist': order.dist}],
                             'address': order.order_address,
-                            'coordinates': {'lng': order.order_lng, 'lat': order.order_lat},
                             'hash': order.hash_order,
-                            'id': order_id
+                            'pk': order_id,
+                            'status': order.status,
+                            'payment_method': order.payment_method,
+                            'phone': order.phone,
+                            'client': f'{order.first_name} {order.last_name}',
+                            'total_cost': order.total_cost,
+                            'comment': order.order_comment,
+                            'prepare': True,
                         }
                     }
                 )

@@ -9,7 +9,7 @@ from django.contrib.auth.decorators import user_passes_test
 from django.contrib.auth import authenticate, login
 from django.contrib.auth import views as auth_views
 
-from calcdistances.views import create_all_blocks_available_restaurants
+from calcdistances.views import update_all_order_place_ids
 from foodcartapp.models import Product, Restaurant, Order
 
 
@@ -94,11 +94,10 @@ def view_restaurants(request):
 
 @user_passes_test(is_manager, login_url='restaurateur:login')
 def view_orders(request):
-
-    orders = Order.objects.add_total_cost().exclude(status='OK')
     restaurants_available = Order.objects.get_restaurants_available()
-    blocks_restaurants = create_all_blocks_available_restaurants(restaurants_available)
+    if update_all_order_place_ids(restaurants_available):
+        restaurants_available = Order.objects.get_restaurants_available()
     return render(request,
                   template_name='order_items.html',
-                  context={'order_items': orders, 'blocks_restaurants': blocks_restaurants}
+                  context={'order_items': restaurants_available}
                   )
