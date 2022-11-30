@@ -1,5 +1,3 @@
-from pprint import pprint
-
 from django import forms
 from django.shortcuts import redirect, render
 from django.views import View
@@ -94,10 +92,10 @@ def view_restaurants(request):
 
 @user_passes_test(is_manager, login_url='restaurateur:login')
 def view_orders(request):
-    restaurants_available = Order.objects.get_restaurants_available()
-    if update_all_order_place_ids(restaurants_available):
-        restaurants_available = Order.objects.get_restaurants_available()
+    order_items = Order.objects.get_restaurants_available()
+    if update_all_order_place_ids(order_items):
+        order_items = Order.objects.get_restaurants_available()
     return render(request,
                   template_name='order_items.html',
-                  context={'order_items': restaurants_available}
+                  context={'order_items': order_items}
                   )

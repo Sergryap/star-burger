@@ -1,6 +1,4 @@
 from django.db import models
-from django.db.models.functions import Coalesce, Cast
-from django.db.models import Sum, F, OuterRef, Value
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from django.core.validators import MinValueValidator
@@ -137,29 +135,14 @@ class RestaurantMenuItem(models.Model):
 
 
 class OrderQuerySet(models.QuerySet):
-
-    def add_total_cost(self):
-        order_cost = (
-            OrderPosition.objects
-            .values('order_id')
-            .annotate(total=Sum(F('price') * F('quantity')))
-            .filter(order=OuterRef('pk'))
-        )
-        return self.annotate(
-            total=Coalesce(
-                Cast(order_cost.values('total'), models.CharField()),
-                Value('Нет данных')
-            )
-        )
-
     def get_restaurants_available(self):
         restaurants_available = {}
         orders_restaurant = self.raw(
             '''
             SELECT
-               fr.id, restaurant_id, fo.id as order_id, fr2.name, fo.address as order_address,
-               fr2.address as restaurant_address, fo.restaurant_order_id, COUNT(*) as count_restaurant,
-               cp.lng order_lng, cp.lat order_lat, cp1.lng restaurant_lng, cp1.lat restaurant_lat,
+               fr.id, restaurant_id, fo.id as order_id, fr2.name, fo3.id as order_position_id,
+               fo.address as order_address, fr2.address as restaurant_address,
+               fo.restaurant_order_id, COUNT(*) as count_restaurant,
                cp.hash hash_order, cp1.hash hash_restaurant,
                fo.status, fo.payment_method,
                fo.firstname as first_name, fo.lastname as last_name,
@@ -192,6 +175,15 @@ class OrderQuerySet(models.QuerySet):
             ORDER BY fo.id, dist
             '''
         )
+        status = {
+            'UN': 'Необработанный',
+            'RS': 'Передан в ресторан',
+            'CR': 'Передан курьеру',
+            'OK': 'Выполнен',
+            'CH': 'Наличностью',
+            'RM': 'Электронно',
+            'NO': 'Не назначен',
+        }
         order_id = 0
         restaurants = []
         for order in orders_restaurant:
@@ -216,13 +208,14 @@ class OrderQuerySet(models.QuerySet):
                             'address': order.order_address,
                             'hash': order.hash_order,
                             'pk': order_id,
-                            'status': order.status,
-                            'payment_method': order.payment_method,
+                            'status': status[order.status],
+                            'payment_method': status[order.payment_method],
                             'phone': order.phone,
                             'client': f'{order.first_name} {order.last_name}',
                             'total_cost': order.total_cost,
                             'comment': order.order_comment,
                             'prepare': False,
+                            'order_position_id': order.order_position_id
                         },
                     }
                 )
@@ -239,13 +232,14 @@ class OrderQuerySet(models.QuerySet):
                             'address': order.order_address,
                             'hash': order.hash_order,
                             'pk': order_id,
-                            'status': order.status,
-                            'payment_method': order.payment_method,
+                            'status': status[order.status],
+                            'payment_method': status[order.payment_method],
                             'phone': order.phone,
                             'client': f'{order.first_name} {order.last_name}',
                             'total_cost': order.total_cost,
                             'comment': order.order_comment,
                             'prepare': True,
+                            'order_position_id': order.order_position_id
                         }
                     }
                 )

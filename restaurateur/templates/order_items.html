@@ -60,20 +60,26 @@
         <td>{{ item.address }}</td>
         <td>{{ item.comment }}</td>
         <td width="18%">
-          {% if item.prepare %}
-            {% for restaurant in item.restaurants %}
-              Заказ готовится рестораном:<br>&#10004 {{ restaurant.name }} - {{ restaurant.dist }} км
-            {% endfor %}
+          {% if item.order_position_id %}
+            {% if item.prepare %}
+              {% for restaurant in item.restaurants %}
+                Заказ готовится рестораном:<br>&#10004 {{ restaurant.name }} - {{ restaurant.dist }} км
+              {% endfor %}
+            {% else %}
+              <details>
+                <summary>Может быть приготовлен &#9660</summary>
+                  {% for restaurant in item.restaurants %}
+                    {% if restaurant.dist %}
+                      &#10004{{ restaurant.name }} - {{ restaurant.dist }} км<br>
+                    {% else %}
+                      &#10004{{ restaurant.name }} - Нет данных!<br>
+                    {% endif %}
+                  {% endfor %}
+              </details>
+            {% endif %}
           {% else %}
-            <details>
-              <summary>Может быть приготовлен &#9660</summary>
-                {% for restaurant in item.restaurants %}
-                  &#10004{{ restaurant.name }} - {{ restaurant.dist }} км<br>
-                {% endfor %}
-            </details>
+            Пустой заказ!
           {% endif %}
-
-
         </td>
         <td>
           <a href="{{ item|link_edit_orders }}">Редактировать</a>
