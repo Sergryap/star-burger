@@ -104,7 +104,7 @@ def register_order(request):
         hash=hash_order,
         defaults=fetch_coordinates(apikey=settings.GEO_TOKEN, address=order_data['address'])
     )
-    order.place_id = place_order.id
+    order.place = place_order
     order.save()
 
     positions = []

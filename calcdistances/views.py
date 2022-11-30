@@ -55,7 +55,7 @@ def update_order_place_id(order, restaurant, apikey):
         )
         # Назначаем place_id для order:
         order_current = Order.objects.get(pk=order['pk'])
-        order_current.place_id = place_order.id
+        order_current.place = place_order
         order_current.save()
         order['hash'] = hash_current_order
 
@@ -68,7 +68,7 @@ def update_order_place_id(order, restaurant, apikey):
         )
         # Назначаем place_id для restaurant
         restaurant_current = Restaurant.objects.get(pk=restaurant['restaurant_id'])
-        restaurant_current.place_id = place_restaurant.id
+        restaurant_current.place = place_restaurant
         restaurant_current.save()
         restaurant['hash'] = hash_current_restaurant
 
