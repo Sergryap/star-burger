@@ -172,7 +172,7 @@ class OrderQuerySet(models.QuerySet):
                     HAVING fo4.order_id = fo3.order_id
                     )
                 OR fo3.order_id ISNULL
-            ORDER BY fo.id, dist
+            ORDER BY fo.called_at, fo.id, dist
             '''
         )
         status = {
