@@ -100,11 +100,11 @@ def register_order(request):
     )
 
     hash_order = xxhash.xxh32(order_data['address'].encode()).intdigest()
-    place_order, created = PlaceCoord.objects.get_or_create(
+    order_place, created = PlaceCoord.objects.get_or_create(
         hash=hash_order,
         defaults=fetch_coordinates(apikey=settings.GEO_TOKEN, address=order_data['address'])
     )
-    order.place = place_order
+    order.place = order_place
     order.save()
 
     positions = []

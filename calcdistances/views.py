@@ -24,11 +24,11 @@ def update_all_order_place_ids(restaurants_available):
 
 
 def fetch_coordinates(apikey, address):
-    base_url = "https://geocode-maps.yandex.ru/1.x"
+    base_url = 'https://geocode-maps.yandex.ru/1.x'
     response = requests.get(base_url, params={
-        "geocode": address,
-        "apikey": apikey,
-        "format": "json",
+        'geocode': address,
+        'apikey': apikey,
+        'format': 'json',
     })
     response.raise_for_status()
     found_places = response.json()['response']['GeoObjectCollection']['featureMember']
@@ -49,28 +49,27 @@ def update_order_place_id(order, restaurant, apikey):
     # Проверяем было ли изменение адреса ордера или добавление нового:
     if hash_current_order != order['hash']:
         modified = True
-        place_order, created = PlaceCoord.objects.get_or_create(
+        order_place, created = PlaceCoord.objects.get_or_create(
             hash=hash_current_order,
             defaults=fetch_coordinates(apikey, order['address'])
         )
         # Назначаем place_id для order:
-        order_current = Order.objects.get(pk=order['pk'])
-        order_current.place = place_order
-        order_current.save()
+        current_order = Order.objects.get(pk=order['pk'])
+        current_order.place = order_place
+        current_order.save()
         order['hash'] = hash_current_order
 
     # Проверяем было ли изменение адреса ресторана или добавление нового:
     if hash_current_restaurant != restaurant['hash']:
         modified = True
-        place_restaurant, created = PlaceCoord.objects.get_or_create(
+        restaurant_place, created = PlaceCoord.objects.get_or_create(
             hash=hash_current_restaurant,
             defaults=fetch_coordinates(apikey, restaurant['address'])
         )
         # Назначаем place_id для restaurant
-        restaurant_current = Restaurant.objects.get(pk=restaurant['restaurant_id'])
-        restaurant_current.place = place_restaurant
-        restaurant_current.save()
+        current_restaurant = Restaurant.objects.get(pk=restaurant['restaurant_id'])
+        current_restaurant.place = restaurant_place
+        current_restaurant.save()
         restaurant['hash'] = hash_current_restaurant
 
     return modified
-
