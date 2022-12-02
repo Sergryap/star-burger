@@ -6,8 +6,7 @@ from django.utils import timezone
 class PlaceCoord(models.Model):
     address = models.CharField(
         max_length=255,
-        verbose_name='адрес',
-        unique=True,
+        verbose_name='адрес'
     )
     lng = models.DecimalField(
         max_digits=9,
