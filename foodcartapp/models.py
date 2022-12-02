@@ -135,6 +135,33 @@ class RestaurantMenuItem(models.Model):
 
 
 class OrderQuerySet(models.QuerySet):
+
+    @staticmethod
+    def add_data_order(order_id, order, prepare):
+
+        status = {
+            'UN': 'Необработанный',
+            'RS': 'Передан в ресторан',
+            'CR': 'Передан курьеру',
+            'OK': 'Выполнен',
+            'CH': 'Наличностью',
+            'RM': 'Электронно',
+            'NO': 'Не назначен',
+        }
+        return {
+            'address': order.order_address,
+            'hash': order.hash_order,
+            'pk': order_id,
+            'status': status[order.status],
+            'payment_method': status[order.payment_method],
+            'phone': order.phone,
+            'client': f'{order.first_name} {order.last_name}',
+            'total_cost': order.total_cost,
+            'comment': order.order_comment,
+            'prepare': prepare,
+            'order_position_id': order.order_position_id
+        }
+
     def get_data_orders(self):
         restaurants_available = {}
         orders_restaurant = self.raw(
@@ -175,15 +202,6 @@ class OrderQuerySet(models.QuerySet):
             ORDER BY fo.called_at, fo.id, dist
             '''
         )
-        status = {
-            'UN': 'Необработанный',
-            'RS': 'Передан в ресторан',
-            'CR': 'Передан курьеру',
-            'OK': 'Выполнен',
-            'CH': 'Наличностью',
-            'RM': 'Электронно',
-            'NO': 'Не назначен',
-        }
         order_id = 0
         restaurants = []
         for order in orders_restaurant:
@@ -204,19 +222,8 @@ class OrderQuerySet(models.QuerySet):
                 restaurants_available.update(
                     {
                         order_id: {
-                            'restaurants': restaurants,
-                            'address': order.order_address,
-                            'hash': order.hash_order,
-                            'pk': order_id,
-                            'status': status[order.status],
-                            'payment_method': status[order.payment_method],
-                            'phone': order.phone,
-                            'client': f'{order.first_name} {order.last_name}',
-                            'total_cost': order.total_cost,
-                            'comment': order.order_comment,
-                            'prepare': False,
-                            'order_position_id': order.order_position_id
-                        },
+                            'restaurants': restaurants
+                        } | self.add_data_order(order_id, order, prepare=False)
                     }
                 )
             elif order.restaurant_id == order.restaurant_order_id:
@@ -228,19 +235,8 @@ class OrderQuerySet(models.QuerySet):
                                   'name': order.name,
                                   'address': order.restaurant_address,
                                   'hash': order.hash_restaurant,
-                                  'dist': order.dist}],
-                            'address': order.order_address,
-                            'hash': order.hash_order,
-                            'pk': order_id,
-                            'status': status[order.status],
-                            'payment_method': status[order.payment_method],
-                            'phone': order.phone,
-                            'client': f'{order.first_name} {order.last_name}',
-                            'total_cost': order.total_cost,
-                            'comment': order.order_comment,
-                            'prepare': True,
-                            'order_position_id': order.order_position_id
-                        }
+                                  'dist': order.dist}]
+                        } | self.add_data_order(order_id, order, prepare=True)
                     }
                 )
 
