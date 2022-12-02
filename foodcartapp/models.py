@@ -135,7 +135,7 @@ class RestaurantMenuItem(models.Model):
 
 
 class OrderQuerySet(models.QuerySet):
-    def get_restaurants_available(self):
+    def get_data_orders(self):
         restaurants_available = {}
         orders_restaurant = self.raw(
             '''
