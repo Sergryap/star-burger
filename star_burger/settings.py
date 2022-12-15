@@ -1,5 +1,5 @@
 import os
-
+import re
 import dj_database_url
 
 from environs import Env
@@ -15,6 +15,7 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 SECRET_KEY = env('SECRET_KEY')
 DEBUG = env.bool('DEBUG', True)
+ENVIRONMENT = env('ENVIRONMENT')
 
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', ['127.0.0.1', 'localhost'])
 
@@ -42,6 +43,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'debug_toolbar.middleware.DebugToolbarMiddleware',
+    'rollbar.contrib.django.middleware.RollbarNotifierMiddleware',
 ]
 
 ROOT_URLCONF = 'star_burger.urls'
@@ -91,6 +93,20 @@ DATABASES = {
     'default': dj_database_url.config(
         default='sqlite:////{0}'.format(os.path.join(BASE_DIR, 'db.sqlite3'))
     )
+}
+
+ROLLBAR = {
+    'access_token': '8eec057c9f06442a8fef2f8db91973e3',
+    'environment': ENVIRONMENT,
+    'code_version': '1.0',
+    'root': BASE_DIR,
+    'ignorable_404_urls': (
+        re.compile('/.+'),
+    ),
+}
+
+REST_FRAMEWORK = {
+    'EXCEPTION_HANDLER': 'rollbar.contrib.django_rest_framework.post_exception_handler'
 }
 
 AUTH_PASSWORD_VALIDATORS = [
