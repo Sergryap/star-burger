@@ -1,5 +1,5 @@
 import os
-
+import re
 import dj_database_url
 
 from environs import Env
@@ -10,13 +10,14 @@ env.read_env()
 GEO_TOKEN = env('GEO_TOKEN')
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 
 SECRET_KEY = env('SECRET_KEY')
 DEBUG = env.bool('DEBUG', True)
+ENVIRONMENT = env('ENVIRONMENT')
+ACCESS_TOKEN = env('ACCESS_TOKEN')
 
-ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', ['127.0.0.1', 'localhost'])
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', ['95.163.233.229', '127.0.0.1', 'localhost'])
 
 INSTALLED_APPS = [
     'foodcartapp.apps.FoodcartappConfig',
@@ -42,6 +43,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'debug_toolbar.middleware.DebugToolbarMiddleware',
+    'rollbar.contrib.django.middleware.RollbarNotifierMiddleware',
 ]
 
 ROOT_URLCONF = 'star_burger.urls'
@@ -93,6 +95,20 @@ DATABASES = {
     )
 }
 
+ROLLBAR = {
+    'access_token': ACCESS_TOKEN,
+    'environment': ENVIRONMENT,
+    'code_version': '1.0',
+    'root': BASE_DIR,
+    'ignorable_404_urls': (
+        re.compile('/.+'),
+    ),
+}
+
+REST_FRAMEWORK = {
+    'EXCEPTION_HANDLER': 'rollbar.contrib.django_rest_framework.post_exception_handler'
+}
+
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
@@ -119,6 +135,7 @@ USE_L10N = True
 USE_TZ = True
 
 STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, "static")
 
 INTERNAL_IPS = [
     '127.0.0.1'
