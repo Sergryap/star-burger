@@ -10,14 +10,14 @@ env.read_env()
 GEO_TOKEN = env('GEO_TOKEN')
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 
 SECRET_KEY = env('SECRET_KEY')
 DEBUG = env.bool('DEBUG', True)
 ENVIRONMENT = env('ENVIRONMENT')
+ACCESS_TOKEN = env('ACCESS_TOKEN')
 
-ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', ['127.0.0.1', 'localhost'])
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', ['95.163.233.229', '127.0.0.1', 'localhost'])
 
 INSTALLED_APPS = [
     'foodcartapp.apps.FoodcartappConfig',
@@ -96,7 +96,7 @@ DATABASES = {
 }
 
 ROLLBAR = {
-    'access_token': '8eec057c9f06442a8fef2f8db91973e3',
+    'access_token': ACCESS_TOKEN,
     'environment': ENVIRONMENT,
     'code_version': '1.0',
     'root': BASE_DIR,
@@ -135,6 +135,7 @@ USE_L10N = True
 USE_TZ = True
 
 STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, "static")
 
 INTERNAL_IPS = [
     '127.0.0.1'
