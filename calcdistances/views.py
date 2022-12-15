@@ -5,9 +5,9 @@ from foodcartapp.models import Order, Restaurant
 from django.conf import settings
 
 
-def update_all_order_place_ids(restaurants_available):
+def update_all_order_place_ids(order_data):
     modified = []
-    for order in restaurants_available.values():
+    for order in order_data.values():
         try:
             for restaurant in order['restaurants']:
                 modified.append(
