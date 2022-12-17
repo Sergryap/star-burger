@@ -238,6 +238,8 @@ python3 manage.py createsuperuser
 [Unit]
 Description=Django service 
 After=network.target
+After=nginx.service
+Requires=postgresql.service
 
 [Service]
 User=root
