@@ -32,7 +32,7 @@ class PlaceCoord(models.Model):
         verbose_name='время запроса',
         default=timezone.now
     )
-    hash = models.PositiveIntegerField(
+    hash = models.PositiveBigIntegerField(
         unique=True,
         db_index=True,
         validators=[MaxValueValidator(limit_value=9999999999)]
