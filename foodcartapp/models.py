@@ -166,19 +166,23 @@ class OrderQuerySet(models.QuerySet):
         restaurants_available = {}
         orders_restaurant = self.raw(
             '''
-            SELECT
-               fr.id, restaurant_id, fo.id as order_id, fr2.name, fo3.id as order_position_id,
-               fo.address as order_address, fr2.address as restaurant_address,
-               fo.restaurant_order_id, COUNT(*) as count_restaurant,
-               cp.hash hash_order, cp1.hash hash_restaurant,
-               fo.status, fo.payment_method,
-               fo.firstname as first_name, fo.lastname as last_name,
-               fo.phonenumber as phone, fo.comment as order_comment,
-               round (
-               (acos(sin(cp.lat*pi()/180)*sin(cp1.lat*pi()/180)
-                   +cos(cp.lat*pi()/180)*cos(cp1.lat*pi()/180)*cos(cp.lng*pi()/180
-                   -cp1.lng*pi()/180)))*6371, 2) as dist,
-               (SELECT SUM(quantity*price)
+            select *
+            from (
+            select
+                fr2.id, restaurant_id, fo.id as order_id, fr2.name,
+                (array_agg(fo3.id))[1] as order_position_id,
+                fo.address as order_address, fr2.address as restaurant_address,
+                fo.restaurant_order_id, COUNT(*) as count_restaurant,
+                cp.lng order_lng, cp.lat order_lat,
+                cp1.lng restaurant_lng, cp1.lat restaurant_lat,
+                cp.hash hash_order, cp1.hash hash_restaurant,
+                fo.status, fo.payment_method, fo.called_at,
+                fo.firstname as first_name, fo.lastname as last_name,
+                fo.phonenumber as phone, fo.comment as order_comment,
+                round((acos(sind(cp.lat)*sind(cp1.lat)
+                       +cosd(cp.lat)*cosd(cp1.lat)*cosd(cp.lng
+                       -cp1.lng))*6371)::numeric, 2) as dist,
+                (SELECT SUM(quantity*price)
                 FROM foodcartapp_orderposition
                 GROUP BY order_id
                 HAVING order_id = fo.id) as total_cost
@@ -189,17 +193,21 @@ class OrderQuerySet(models.QuerySet):
             LEFT JOIN foodcartapp_restaurant fr2 ON fr2.id = fr.restaurant_id
             LEFT JOIN calcdistances_placecoord cp ON cp.id = fo.place_id
             LEFT JOIN calcdistances_placecoord cp1 ON cp1.id = fr2.place_id
-            WHERE (fr.availability = TRUE OR fo3.order_id ISNULL)  and fo.status != 'OK'
-            GROUP by fo.id, restaurant_id
-            HAVING
-                count_restaurant = (
+            WHERE (fr.availability = TRUE OR fo3.order_id ISNULL) and fo.status != 'OK'
+            group by
+                fo.id, fr2.name, restaurant_id, fr2.id,
+                fo.address, fr2.address, cp.lng, cp.lat, cp1.lng, cp1.lat,
+                cp.hash, cp1.hash
+            ) as foo
+            where
+                foo.count_restaurant = (
                     SELECT COUNT(*)
                     from foodcartapp_orderposition fo4
                     GROUP BY fo4.order_id
-                    HAVING fo4.order_id = fo3.order_id
+                    HAVING fo4.order_id = foo.order_id
                     )
-                OR fo3.order_id ISNULL
-            ORDER BY fo.called_at, fo.id, dist
+                or foo.order_position_id ISNULL
+            ORDER BY foo.called_at DESC, foo.order_id, foo.dist
             '''
         )
         order_id = 0
