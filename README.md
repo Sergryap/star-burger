@@ -143,7 +143,19 @@ Parcel будет следить за файлами в каталоге `bundle
 
 ## Как запустить prod-версию сайта
 
-Скачайте код в каталог `/opt` корневого каталога сервера:
+Арендуйте удаленный сервер и установите на нем последнюю версию OS Ubuntu
+
+Установите Postgresql, git, pip, venv, nginx:
+```sh
+sudo apt update
+sudo apt -y install git
+sudo apt -y install postgresql
+sudo apt -y install python3-pip
+sudo apt -y install python3-venv
+sudo apt -y install nginx
+```
+
+Скачайте код проекта в каталог `/opt` корневого каталога сервера:
 ```sh
 cd /
 cd /opt
@@ -151,6 +163,7 @@ git clone https://github.com/Sergryap/star-burger.git
 ```
 
 Перейдите в каталог проекта:
+
 ```sh
 cd /opt/star-burger
 ```
@@ -168,7 +181,40 @@ source venv/bin/activate
 ```sh
 pip install -r requirements.txt
 ```
-Создайте файл в каталоге `/etc/systemd/system` следующего содержания:
+Установите gunicorn в виртуальное окружение:
+```sh
+pip install gunicorn
+```
+Соберите фронтенд:
+```sh
+./node_modules/.bin/parcel build bundles-src/index.js --dist-dir bundles --public-url="./"
+```
+Соберите статику для prod-версии:
+```sh
+python3 manage.py collectstatic
+```
+Создать файл `.env` с переменными окружения в каталоге `star_burger/`:
+```
+SECRET_KEY=django-insecure-0if40nf4nf93n4
+GEO_TOKEN=<Ваш API ключ от геокодера Яндекса>
+ACCESS_TOKEN=<Ваш токен от сервиса rollbar.com>
+ENVIRONMENT=<Название среды разработки для отслеживания ошибок в rollbar.com>
+DB_URL=postgres://<пользователь postgres>:<пароль пользователя>@<хост базы данных>:<порт бд>/<имя бд>
+```
+Подробнее о `DB_URL` см здесь: https://github.com/jazzband/dj-database-url
+
+Подробнее о `ACCESS_TOKEN` см здесь: [rollbar.com](https://rollbar.com)
+
+Выполните миграцию базы данных Postgresql следующей командой:
+
+```sh
+python3 manage.py migrate
+```
+Создайте суперпользователя:
+```sh
+python3 manage.py createsuperuser
+```
+Создайте файл `star-burger.service` в каталоге `/etc/systemd/system` следующего содержания:
 ```
 [Unit]
 Description=Django service 
@@ -190,25 +236,28 @@ Restart=on-failure RestartSec=2
 [Install]
 WantedBy=multi-user.target
 ```
-
-
-
-Собрать фронтенд:
-
+Перейдите в каталог /etc/nginx/sites-enabled:
 ```sh
-./node_modules/.bin/parcel build bundles-src/index.js --dist-dir bundles --public-url="./"
+cd /etc/nginx/sites-enabled
+```
+Удалите в этом каталоге все файлы и создайте файл `starburger` следующего содержания:
+
+```
+server {
+     listen 80 default;     
+     location / {
+         include '/etc/nginx/proxy_params';
+         proxy_pass http://<HOST вашего сервера>:8080/;
+     }
+ }
+```
+Выполните команды для запуска демонов:
+```
+systemctl enable star-burger
+systemctl start star-burger
+nginx -s reload
 ```
 
-Настроить бэкенд: создать файл `.env` в каталоге `star_burger/` со следующими настройками:
-
-- `SECRET_KEY` — секретный ключ проекта. Он отвечает за шифрование на сайте. Например, им зашифрованы все пароли на вашем сайте.
-- `GEO_TOKEN` — Ваш API ключ от геокодера Яндекса
-- `ALLOWED_HOSTS` — cписок, представляющий имена хостов/доменов, которые может обслуживать этот сайт Django
-- `ACCESS_TOKEN`=<Ваш токен от сервиса rollbar.com>
-- `ENVIRONMENT`=<Название среды разработки для отслеживания ошибок в rollbar.com>
-- `DB_URL`=postgres://<пользователь postgres>:<пароль пользователя>@<хост базы данных>:<порт бд>/<имя бд>
-
-Создать файл 
 
 ## Цели проекта
 
