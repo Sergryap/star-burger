@@ -21,7 +21,7 @@
 
 Скачайте код:
 ```sh
-git clone https://github.com/devmanorg/star-burger.git
+git clone https://github.com/Sergryap/star-burger.git
 ```
 
 Перейдите в каталог проекта:
@@ -37,7 +37,17 @@ python --version
 ```
 **Важно!** Версия Python должна быть не ниже 3.6.
 
-Возможно, вместо команды `python` здесь и в остальных инструкциях этого README придётся использовать `python3`. Зависит это от операционной системы и от того, установлен ли у вас Python старой второй версии. 
+Возможно, вместо команды `python` здесь и в остальных инструкциях этого README придётся использовать `python3`. Зависит это от операционной системы и от того, установлен ли у вас Python старой второй версии.
+
+Создайте базу данных Postgres и пользователя для работы с ней, выполнив последовательно следующие команды:
+```sh
+sudo su - postgres
+psql
+CREATE DATABASE <имя базы данных>;
+CREATE USER <пользователь postgres> WITH PASSWORD '<пароль для пользователя>';
+ALTER ROLE <имя пользователя> SET client_encoding TO 'utf8';
+GRANT ALL PRIVILEGES ON DATABASE <имя базы данных> TO <имя пользователя>;
+```
 
 В каталоге проекта создайте виртуальное окружение:
 ```sh
@@ -54,13 +64,19 @@ python -m venv venv
 pip install -r requirements.txt
 ```
 
-Определите переменные окружения `SECRET_KEY` и `GEO_TOKEN`. Создать файл `.env` в каталоге `star_burger/` и положите туда такой код:
-```sh
+Создать файл `.env` с переменными окружения в каталоге `star_burger/`:
+```
 SECRET_KEY=django-insecure-0if40nf4nf93n4
 GEO_TOKEN=<Ваш API ключ от геокодера Яндекса>
+ACCESS_TOKEN=<Ваш токен от сервиса rollbar.com>
+ENVIRONMENT=<Название среды разработки для отслеживания ошибок в rollbar.com>
+DB_URL=postgres://<пользователь postgres>:<пароль пользователя>@<хост базы данных>:<порт бд>/<имя бд>
 ```
+Подробнее о `DB_URL` см здесь: https://github.com/jazzband/dj-database-url
 
-Создайте файл базы данных SQLite и отмигрируйте её следующей командой:
+Подробнее о `ACCESS_TOKEN` см здесь: [rollbar.com](https://rollbar.com)
+
+Выполните миграцию базы данных Postgresql следующей командой:
 
 ```sh
 python manage.py migrate
@@ -137,18 +153,134 @@ Parcel будет следить за файлами в каталоге `bundle
 
 ## Как запустить prod-версию сайта
 
-Собрать фронтенд:
+Арендуйте удаленный сервер и установите на нем последнюю версию OS Ubuntu
 
+Установите Postgresql, git, pip, venv, nginx:
+```sh
+sudo apt update
+sudo apt -y install git
+sudo apt -y install postgresql
+sudo apt -y install python3-pip
+sudo apt -y install python3-venv
+sudo apt -y install nginx
+```
+Создайте базу данных Postgres и пользователя для работы с ней, выполнив последовательно следующие команды:
+```sh
+sudo su - postgres
+psql
+CREATE DATABASE <имя базы данных>;
+CREATE USER <пользователь postgres> WITH PASSWORD '<пароль для пользователя>';
+ALTER ROLE <имя пользователя> SET client_encoding TO 'utf8';
+GRANT ALL PRIVILEGES ON DATABASE <имя базы данных> TO <имя пользователя>;
+```
+
+Скачайте код проекта в каталог `/opt` корневого каталога сервера:
+```sh
+cd /
+cd /opt
+git clone https://github.com/Sergryap/star-burger.git
+```
+
+Перейдите в каталог проекта:
+
+```sh
+cd /opt/star-burger
+```
+В каталоге проекта создайте виртуальное окружение:
+```sh
+python3 -m venv venv
+```
+Активируйте его:
+
+```sh
+source venv/bin/activate
+```
+
+Установите зависимости в виртуальное окружение:
+```sh
+pip install -r requirements.txt
+```
+Установите gunicorn в виртуальное окружение:
+```sh
+pip install gunicorn
+```
+Соберите фронтенд:
 ```sh
 ./node_modules/.bin/parcel build bundles-src/index.js --dist-dir bundles --public-url="./"
 ```
+Соберите статику для prod-версии:
+```sh
+python3 manage.py collectstatic
+```
+Создайте файл `.env` с переменными окружения в каталоге `star_burger/`:
+```
+SECRET_KEY=django-insecure-0if40nf4nf93n4
+GEO_TOKEN=<Ваш API ключ от геокодера Яндекса>
+ACCESS_TOKEN=<Ваш токен от сервиса rollbar.com>
+ENVIRONMENT=<Название среды разработки для отслеживания ошибок в rollbar.com>
+DB_URL=postgres://<пользователь postgres>:<пароль пользователя>@<хост базы данных>:<порт бд>/<имя бд>
+```
+Подробнее о `DB_URL` см здесь: https://github.com/jazzband/dj-database-url
 
-Настроить бэкенд: создать файл `.env` в каталоге `star_burger/` со следующими настройками:
+Подробнее о `ACCESS_TOKEN` см здесь: [rollbar.com](https://rollbar.com)
 
-- `DEBUG` — дебаг-режим. Поставьте `False`.
-- `SECRET_KEY` — секретный ключ проекта. Он отвечает за шифрование на сайте. Например, им зашифрованы все пароли на вашем сайте.
-- `GEO_TOKEN` — Ваш API ключ от геокодера Яндекса
-- `ALLOWED_HOSTS` — cписок, представляющий имена хостов/доменов, которые может обслуживать этот сайт Django.
+Выполните миграцию базы данных Postgresql следующей командой:
+
+```sh
+python3 manage.py migrate
+```
+Создайте суперпользователя:
+```sh
+python3 manage.py createsuperuser
+```
+Создайте файл `star-burger.service` в каталоге `/etc/systemd/system` следующего содержания:
+```
+[Unit]
+Description=Django service 
+After=network.target
+
+[Service]
+User=root
+Group=root
+WorkingDirectory=/opt/star-burger/
+Environment="DEBUG=False" 
+Environment="ALLOWED_HOSTS=95.163.233.229" 
+ExecStart=/opt/star-burger/venv/bin/gunicorn -b <HOST вашего сервера>:8080 --workers 3 star_burger.wsgi:application
+ExecReload=/bin/kill -s HUP $MAINPID
+KillMode=mixed
+TimeoutStopSec=5 
+PrivateTmp=true
+Restart=on-failure RestartSec=2 
+
+[Install]
+WantedBy=multi-user.target
+```
+Перейдите в каталог /etc/nginx/sites-enabled:
+```sh
+cd /etc/nginx/sites-enabled
+```
+Удалите в этом каталоге все файлы и создайте файл `starburger` следующего содержания:
+
+```
+server {
+     listen 80 default;     
+     location / {
+         include '/etc/nginx/proxy_params';
+         proxy_pass http://<HOST вашего сервера>:8080/;
+     }
+ }
+```
+Выполните команды для запуска демонов:
+```
+systemctl enable star-burger
+systemctl start star-burger
+nginx -s reload
+```
+После успешного выполнения указанных действий сайт будет доступен по ссылке:
+```
+http://<HOST вашего сервера>
+```
+
 
 ## Цели проекта
 
