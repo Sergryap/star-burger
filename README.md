@@ -37,7 +37,17 @@ python --version
 ```
 **Важно!** Версия Python должна быть не ниже 3.6.
 
-Возможно, вместо команды `python` здесь и в остальных инструкциях этого README придётся использовать `python3`. Зависит это от операционной системы и от того, установлен ли у вас Python старой второй версии. 
+Возможно, вместо команды `python` здесь и в остальных инструкциях этого README придётся использовать `python3`. Зависит это от операционной системы и от того, установлен ли у вас Python старой второй версии.
+
+Создайте базу данных Postgres и пользователя для работы с ней, выполнив последовательно следующие команды:
+```sh
+sudo su - postgres
+psql
+CREATE DATABASE <имя базы данных>;
+CREATE USER <пользователь postgres> WITH PASSWORD '<пароль для пользователя>';
+ALTER ROLE <имя пользователя> SET client_encoding TO 'utf8';
+GRANT ALL PRIVILEGES ON DATABASE <имя базы данных> TO <имя пользователя>;
+```
 
 В каталоге проекта создайте виртуальное окружение:
 ```sh
@@ -154,6 +164,15 @@ sudo apt -y install python3-pip
 sudo apt -y install python3-venv
 sudo apt -y install nginx
 ```
+Создайте базу данных Postgres и пользователя для работы с ней, выполнив последовательно следующие команды:
+```sh
+sudo su - postgres
+psql
+CREATE DATABASE <имя базы данных>;
+CREATE USER <пользователь postgres> WITH PASSWORD '<пароль для пользователя>';
+ALTER ROLE <имя пользователя> SET client_encoding TO 'utf8';
+GRANT ALL PRIVILEGES ON DATABASE <имя базы данных> TO <имя пользователя>;
+```
 
 Скачайте код проекта в каталог `/opt` корневого каталога сервера:
 ```sh
@@ -169,7 +188,7 @@ cd /opt/star-burger
 ```
 В каталоге проекта создайте виртуальное окружение:
 ```sh
-python -m venv venv
+python3 -m venv venv
 ```
 Активируйте его:
 
@@ -193,7 +212,7 @@ pip install gunicorn
 ```sh
 python3 manage.py collectstatic
 ```
-Создать файл `.env` с переменными окружения в каталоге `star_burger/`:
+Создайте файл `.env` с переменными окружения в каталоге `star_burger/`:
 ```
 SECRET_KEY=django-insecure-0if40nf4nf93n4
 GEO_TOKEN=<Ваш API ключ от геокодера Яндекса>
@@ -256,6 +275,10 @@ server {
 systemctl enable star-burger
 systemctl start star-burger
 nginx -s reload
+```
+После успешного выполнения указанных действий сайт будет доступен по ссылке:
+```
+http://<HOST вашего сервера>
 ```
 
 
