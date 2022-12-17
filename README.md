@@ -21,7 +21,7 @@
 
 Скачайте код:
 ```sh
-git clone https://github.com/devmanorg/star-burger.git
+git clone https://github.com/Sergryap/star-burger.git
 ```
 
 Перейдите в каталог проекта:
@@ -55,7 +55,7 @@ pip install -r requirements.txt
 ```
 
 Создать файл `.env` с переменными окружения в каталоге `star_burger/`:
-```sh
+```
 SECRET_KEY=django-insecure-0if40nf4nf93n4
 GEO_TOKEN=<Ваш API ключ от геокодера Яндекса>
 ACCESS_TOKEN=<Ваш токен от сервиса rollbar.com>
@@ -143,6 +143,56 @@ Parcel будет следить за файлами в каталоге `bundle
 
 ## Как запустить prod-версию сайта
 
+Скачайте код в каталог `/opt` корневого каталога сервера:
+```sh
+cd /
+cd /opt
+git clone https://github.com/Sergryap/star-burger.git
+```
+
+Перейдите в каталог проекта:
+```sh
+cd /opt/star-burger
+```
+В каталоге проекта создайте виртуальное окружение:
+```sh
+python -m venv venv
+```
+Активируйте его:
+
+```sh
+source venv/bin/activate
+```
+
+Установите зависимости в виртуальное окружение:
+```sh
+pip install -r requirements.txt
+```
+Создайте файл в каталоге `/etc/systemd/system` следующего содержания:
+```
+[Unit]
+Description=Django service 
+After=network.target
+
+[Service]
+User=root
+Group=root
+WorkingDirectory=/opt/star-burger/
+Environment="DEBUG=False" 
+Environment="ALLOWED_HOSTS=95.163.233.229" 
+ExecStart=/opt/star-burger/venv/bin/gunicorn -b <HOST вашего сервера>:8080 --workers 3 star_burger.wsgi:application
+ExecReload=/bin/kill -s HUP $MAINPID
+KillMode=mixed
+TimeoutStopSec=5 
+PrivateTmp=true
+Restart=on-failure RestartSec=2 
+
+[Install]
+WantedBy=multi-user.target
+```
+
+
+
 Собрать фронтенд:
 
 ```sh
@@ -157,6 +207,8 @@ Parcel будет следить за файлами в каталоге `bundle
 - `ACCESS_TOKEN`=<Ваш токен от сервиса rollbar.com>
 - `ENVIRONMENT`=<Название среды разработки для отслеживания ошибок в rollbar.com>
 - `DB_URL`=postgres://<пользователь postgres>:<пароль пользователя>@<хост базы данных>:<порт бд>/<имя бд>
+
+Создать файл 
 
 ## Цели проекта
 
