@@ -17,7 +17,7 @@ DEBUG = env.bool('DEBUG', True)
 ENVIRONMENT = env('ENVIRONMENT')
 ACCESS_TOKEN = env('ACCESS_TOKEN')
 
-ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', ['95.163.233.229', '127.0.0.1', 'localhost'])
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', ['127.0.0.1', 'localhost'])
 
 INSTALLED_APPS = [
     'foodcartapp.apps.FoodcartappConfig',
