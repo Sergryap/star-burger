@@ -1,5 +1,6 @@
 # #!/bin/bash
 set -Eeuo pipefail
+git pull
 sudo apt update
 sudo apt -y install git
 sudo apt -y install postgresql
