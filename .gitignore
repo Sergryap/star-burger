@@ -147,3 +147,4 @@ cython_debug/
 .idea/
 /db_copy.sqlite3
 /old_code.py
+static/
