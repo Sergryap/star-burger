@@ -16,6 +16,7 @@ git pull
 source venv/bin/activate
 pip install -r requirements.txt
 pip install gunicorn
+rm -rf static
 python3 manage.py collectstatic
 python3 manage.py migrate
 systemctl daemon-reload
