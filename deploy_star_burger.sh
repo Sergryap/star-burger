@@ -1,6 +1,5 @@
 # #!/bin/bash
 set -Eeuo pipefail
-git pull
 sudo apt update
 sudo apt -y install git
 sudo apt -y install postgresql
@@ -16,7 +15,10 @@ git pull
 source venv/bin/activate
 pip install -r requirements.txt
 pip install gunicorn
+if [ -e static ]
+then
 rm -rf static
+fi
 python3 manage.py collectstatic
 python3 manage.py migrate
 systemctl daemon-reload
