@@ -22,4 +22,12 @@ fi
 python3 manage.py collectstatic
 python3 manage.py migrate
 systemctl daemon-reload
+REVISION=$(git log -1 --pretty=format:'%H')
+COMMIT_AUTHOR=$(git log -1 --pretty=format:'%an')
+COMMIT_COMMENT=$(git log -1 --pretty=format:'%s')
+curl \
+-H "X-Rollbar-Access-Token: $ROLLBAR_SERVER_TOKEN" \
+-H "Content-Type: application/json" \
+-X POST 'https://api.rollbar.com/api/1/deploy' \
+-d '{"environment": "home_pk", "revision": "'"$REVISION"'", "rollbar_name": "john", "local_username": "'"$COMMIT_AUTHOR"'", "comment": "'"$COMMIT_COMMENT"'", "status": "succeeded"}'
 echo "Successful data update!"
