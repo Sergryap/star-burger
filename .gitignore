@@ -148,3 +148,4 @@ cython_debug/
 /db_copy.sqlite3
 /old_code.py
 static/
+/deploys_request_curl
