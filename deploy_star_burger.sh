@@ -6,8 +6,6 @@ sudo apt -y install postgresql
 sudo apt -y install python3-pip
 sudo apt -y install python3-venv
 sudo apt -y install nginx
-curl -sL https://deb.nodesource.com/setup_16.x | sudo bash -
-sudo apt -y install nodejs
 cd /
 cd /opt/star-burger
 git pull
