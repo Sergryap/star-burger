@@ -23,7 +23,7 @@ sudo rm -rf static
 fi
 python3 manage.py collectstatic
 python3 manage.py migrate
-systemctl daemon-reload
+sudo systemctl daemon-reload
 REVISION=$(git log -1 --pretty=format:'%H')
 COMMIT_AUTHOR=$(git log -1 --pretty=format:'%an')
 COMMIT_COMMENT=$(git log -1 --pretty=format:'%s')
