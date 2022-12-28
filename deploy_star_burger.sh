@@ -32,4 +32,4 @@ curl \
 -H "Content-Type: application/json" \
 -X POST 'https://api.rollbar.com/api/1/deploy' \
 -d '{"environment": "home_pk", "revision": "'"$REVISION"'", "rollbar_name": "john", "local_username": "'"$COMMIT_AUTHOR"'", "comment": "'"$COMMIT_COMMENT"'", "status": "succeeded"}'
-echo "Successful data update!"
+echo "Deploy completed successfully!"
