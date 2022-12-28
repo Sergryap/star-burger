@@ -7,7 +7,7 @@ from environs import Env
 
 env = Env()
 env.read_env()
-GEO_TOKEN = env('GEO_TOKEN')
+YANDEX_GEO_TOKEN = env('YANDEX_GEO_TOKEN')
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -15,7 +15,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = env('SECRET_KEY')
 DEBUG = env.bool('DEBUG', True)
 ENVIRONMENT = env('ENVIRONMENT')
-ACCESS_TOKEN = env('ACCESS_TOKEN')
+ROLLBAR_ACCESS_TOKEN = env('ROLLBAR_ACCESS_TOKEN')
 
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', ['127.0.0.1', 'localhost'])
 
