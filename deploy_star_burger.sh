@@ -21,8 +21,8 @@ if [ -e static ]
 then
 sudo rm -rf static
 fi
-python3 manage.py collectstatic
-python3 manage.py migrate
+python3 manage.py --noinput collectstatic
+python3 manage.py --noinput migrate
 sudo systemctl daemon-reload
 REVISION=$(git log -1 --pretty=format:'%H')
 COMMIT_AUTHOR=$(git log -1 --pretty=format:'%an')
