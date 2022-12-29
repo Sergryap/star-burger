@@ -14,7 +14,7 @@ def update_all_order_place_ids(order_data):
                     update_order_place_id(
                         order=order,
                         restaurant=restaurant,
-                        apikey=settings.GEO_TOKEN
+                        apikey=settings.YANDEX_GEO_TOKEN
                     )
                 )
         except requests.exceptions.HTTPError:
