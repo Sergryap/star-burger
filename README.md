@@ -206,6 +206,12 @@ pip install -r requirements.txt
 ```sh
 pip install gunicorn
 ```
+В каталоге проекта и установите пакеты Node.js:
+
+```sh
+npm ci --dev
+```
+
 Соберите фронтенд:
 ```sh
 ./node_modules/.bin/parcel build bundles-src/index.js --dist-dir bundles --public-url="./"
