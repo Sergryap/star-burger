@@ -8,11 +8,11 @@ sudo apt -y install python3-venv
 sudo apt -y install nginx
 cd /
 cd /opt/star_burger
-sudo git pull
-sudo ./node_modules/.bin/parcel build bundles-src/index.js --dist-dir bundles --public-url="./"
+git pull
+./node_modules/.bin/parcel build bundles-src/index.js --dist-dir bundles --public-url="./"
 if ! [ -e venv ]
 then
-sudo python3 -m venv venv
+python3 -m venv venv
 fi
 source venv/bin/activate
 pip install -r requirements.txt
