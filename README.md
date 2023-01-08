@@ -206,19 +206,20 @@ pip install -r requirements.txt
 ```sh
 pip install gunicorn
 ```
+В каталоге проекта и установите пакеты Node.js:
+
+```sh
+npm ci --dev
+```
 Соберите фронтенд:
 ```sh
 ./node_modules/.bin/parcel build bundles-src/index.js --dist-dir bundles --public-url="./"
 ```
-Соберите статику для prod-версии:
-```sh
-python3 manage.py collectstatic
-```
 Создайте файл `.env` с переменными окружения в каталоге `star_burger/`:
 ```
 SECRET_KEY=django-insecure-0if40nf4nf93n4
-GEO_TOKEN=<Ваш API ключ от геокодера Яндекса>
-ACCESS_TOKEN=<Ваш токен от сервиса rollbar.com>
+YANDEX_GEO_TOKEN=<Ваш API ключ от геокодера Яндекса>
+ROLLBAR_ACCESS_TOKEN=<Ваш токен от сервиса rollbar.com>
 ENVIRONMENT=<Название среды разработки для отслеживания ошибок в rollbar.com>
 DB_URL=postgres://<пользователь postgres>:<пароль пользователя>@<хост базы данных>:<порт бд>/<имя бд>
 ```
@@ -235,6 +236,10 @@ python3 manage.py migrate
 ```sh
 python3 manage.py createsuperuser
 ```
+Соберите статику для prod-версии:
+```sh
+python3 manage.py collectstatic
+```
 Создайте файл `star-burger.service` в каталоге `/etc/systemd/system` следующего содержания:
 ```
 [Unit]
@@ -248,8 +253,8 @@ User=root
 Group=root
 WorkingDirectory=/opt/star-burger/
 Environment="DEBUG=False" 
-Environment="ALLOWED_HOSTS=95.163.233.229" 
-ExecStart=/opt/star-burger/venv/bin/gunicorn -b <HOST вашего сервера>:8080 --workers 3 star_burger.wsgi:application
+Environment="ALLOWED_HOSTS=<IP вашего сервера>" 
+ExecStart=/opt/star-burger/venv/bin/gunicorn -b 127.0.0.1:8080 --workers 3 star_burger.wsgi:application
 ExecReload=/bin/kill -s HUP $MAINPID
 KillMode=mixed
 TimeoutStopSec=5 
@@ -270,7 +275,7 @@ server {
      listen 80 default;     
      location / {
          include '/etc/nginx/proxy_params';
-         proxy_pass http://<HOST вашего сервера>:8080/;
+         proxy_pass http://127.0.0.1:8080/;
      }
  }
 ```
