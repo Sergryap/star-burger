@@ -1,11 +1,5 @@
 # #!/bin/bash
 set -Eeuo pipefail
-sudo apt update
-sudo apt -y install git
-sudo apt -y install postgresql
-sudo apt -y install python3-pip
-sudo apt -y install python3-venv
-sudo apt -y install nginx
 cd /
 cd /opt/star-burger
 sudo git pull
@@ -22,7 +16,7 @@ then
 sudo rm -rf static
 fi
 python3 manage.py collectstatic --noinput
-python3 manage.py migrate --noinput  
+python3 manage.py migrate --noinput
 sudo systemctl daemon-reload
 REVISION=$(git log -1 --pretty=format:'%H')
 COMMIT_AUTHOR=$(git log -1 --pretty=format:'%an')
