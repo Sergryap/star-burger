@@ -155,7 +155,7 @@ Parcel будет следить за файлами в каталоге `bundle
 
 ## Как запустить prod-версию сайта
 
-Арендуйте удаленный сервер и установите на нем последнюю версию OS Ubuntu
+#### Арендуйте удаленный сервер и установите на нем последнюю версию OS Ubuntu
 
 Установите Postgresql, git, pip, venv, nginx:
 ```sh
@@ -166,7 +166,7 @@ sudo apt -y install python3-pip
 sudo apt -y install python3-venv
 sudo apt -y install nginx
 ```
-Создайте базу данных Postgres и пользователя для работы с ней, выполнив последовательно следующие команды:
+#### Создайте базу данных Postgres и пользователя для работы с ней, выполнив последовательно следующие команды:
 ```sh
 sudo su - postgres
 psql
@@ -176,46 +176,46 @@ ALTER ROLE <имя пользователя> SET client_encoding TO 'utf8';
 GRANT ALL PRIVILEGES ON DATABASE <имя базы данных> TO <имя пользователя>;
 ```
 
-Скачайте код проекта в каталог `/opt` корневого каталога сервера:
+#### Скачайте код проекта в каталог `/opt` корневого каталога сервера:
 ```sh
 cd /
 cd /opt
 git clone https://github.com/Sergryap/star-burger.git
 ```
 
-Перейдите в каталог проекта:
+#### Перейдите в каталог проекта:
 
 ```sh
 cd /opt/star-burger
 ```
-В каталоге проекта создайте виртуальное окружение:
+###### В каталоге проекта создайте виртуальное окружение:
 ```sh
 python3 -m venv venv
 ```
-Активируйте его:
+###### Активируйте его:
 
 ```sh
 source venv/bin/activate
 ```
 
-Установите зависимости в виртуальное окружение:
+###### Установите зависимости в виртуальное окружение:
 ```sh
 pip install -r requirements.txt
 ```
-Установите gunicorn в виртуальное окружение:
+#### Установите gunicorn в виртуальное окружение:
 ```sh
 pip install gunicorn
 ```
-В каталоге проекта и установите пакеты Node.js:
+#### В каталоге проекта и установите пакеты Node.js:
 
 ```sh
 npm ci --dev
 ```
-Соберите фронтенд:
+#### Соберите фронтенд:
 ```sh
 ./node_modules/.bin/parcel build bundles-src/index.js --dist-dir bundles --public-url="./"
 ```
-Создайте файл `.env` с переменными окружения в каталоге `star_burger/`:
+#### Создайте файл `.env` с переменными окружения в каталоге `star_burger/`:
 ```
 SECRET_KEY=django-insecure-0if40nf4nf93n4
 YANDEX_GEO_TOKEN=<Ваш API ключ от геокодера Яндекса>
@@ -227,20 +227,20 @@ DB_URL=postgres://<пользователь postgres>:<пароль пользо
 
 Подробнее о `ACCESS_TOKEN` см здесь: [rollbar.com](https://rollbar.com)
 
-Выполните миграцию базы данных Postgresql следующей командой:
+#### Выполните миграцию базы данных Postgresql следующей командой:
 
 ```sh
 python3 manage.py migrate
 ```
-Создайте суперпользователя:
+#### Создайте суперпользователя:
 ```sh
 python3 manage.py createsuperuser
 ```
-Соберите статику для prod-версии:
+#### Соберите статику для prod-версии:
 ```sh
 python3 manage.py collectstatic
 ```
-Создайте файл `star-burger.service` в каталоге `/etc/systemd/system` следующего содержания:
+#### Создайте файл `star-burger.service` в каталоге `/etc/systemd/system` следующего содержания:
 ```
 [Unit]
 Description=Django service 
@@ -264,11 +264,36 @@ Restart=on-failure RestartSec=2
 [Install]
 WantedBy=multi-user.target
 ```
-Перейдите в каталог /etc/nginx/sites-enabled:
+#### Настройте автоматическое обновление сертификатов
+###### Создайте файл `certbot-renewal.service` в каталоге `/etc/systemd/system`:
+
+```
+[Unit]
+Description=Certbot Renewal
+
+[Service]
+ExecStart=/usr/bin/certbot renew --force-renewal --post-hook "systemctl reload nginx.service"
+```
+###### Создайте файл `certbot-renewal.timer` в каталоге `/etc/systemd/system`:
+```
+[Unit]
+Description=Timer for Certbot Renewal
+
+[Timer]
+OnBootSec=300
+OnUnitActiveSec=1w
+
+[Install]
+WantedBy=multi-user.target
+```
+
+
+#### Настройте Nginx 
+###### Перейдите в каталог /etc/nginx/sites-enabled:
 ```sh
 cd /etc/nginx/sites-enabled
 ```
-Удалите в этом каталоге все файлы и создайте файл `starburger` следующего содержания:
+###### Удалите в этом каталоге все файлы и создайте файл `starburger` следующего содержания:
 
 ```
 server {
@@ -308,7 +333,7 @@ server {
 }
 
 ```
-Выполните команды для запуска демонов:
+#### Выполните команды для запуска демонов:
 ```
 systemctl enable star-burger
 systemctl start star-burger
