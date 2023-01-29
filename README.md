@@ -272,12 +272,41 @@ cd /etc/nginx/sites-enabled
 
 ```
 server {
-     listen 80 default;     
+     server_name starburger-serg.ru www.starburger-serg.ru;
+     listen 80;
+     if ($host = www.starburger-serg.ru) {
+        return 301 https://$host$request_uri;
+     }
+
+
+     if ($host = starburger-serg.ru) {
+        return 301 https://$host$request_uri;
+     }
+}
+
+server {
+     server_name starburger-serg.ru www.starburger-serg.ru;     
+     listen 443 ssl;
+     ssl_certificate /etc/letsencrypt/live/starburger-serg.ru/fullchain.pem;
+     ssl_certificate_key /etc/letsencrypt/live/starburger-serg.ru/privkey.pem;
+     include /etc/letsencrypt/options-ssl-nginx.conf;
+     ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+
+     location /media/ {
+         alias /opt/star_burger/media/;
+     }
+     location /static/ {
+         alias /opt/star_burger/static/;
+     }
+     location /bundles/ {
+         alias /opt/star_burger/bundles/;
+     }
      location / {
          include '/etc/nginx/proxy_params';
          proxy_pass http://127.0.0.1:8080/;
      }
- }
+}
+
 ```
 Выполните команды для запуска демонов:
 ```
