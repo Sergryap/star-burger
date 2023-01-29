@@ -241,9 +241,9 @@ python3 manage.py createsuperuser
 python3 manage.py collectstatic
 ```
 #### Создайте файл `star-burger.service` в каталоге `/etc/systemd/system` следующего содержания:
-```
+```markdown
 [Unit]
-Description=Django service 
+Description=Django service
 After=network.target
 After=nginx.service
 Requires=postgresql.service
@@ -252,14 +252,14 @@ Requires=postgresql.service
 User=root
 Group=root
 WorkingDirectory=/opt/star-burger/
-Environment="DEBUG=False" 
-Environment="ALLOWED_HOSTS=<IP вашего сервера>" 
+Environment="DEBUG=False"
+Environment="ALLOWED_HOSTS=<IP вашего сервера>"
 ExecStart=/opt/star-burger/venv/bin/gunicorn -b 127.0.0.1:8080 --workers 3 star_burger.wsgi:application
 ExecReload=/bin/kill -s HUP $MAINPID
 KillMode=mixed
-TimeoutStopSec=5 
+TimeoutStopSec=5
 PrivateTmp=true
-Restart=on-failure RestartSec=2 
+Restart=on-failure RestartSec=2
 
 [Install]
 WantedBy=multi-user.target
@@ -267,7 +267,7 @@ WantedBy=multi-user.target
 #### Настройте автоматическое обновление сертификатов
 ###### Создайте файл `certbot-renewal.service` в каталоге `/etc/systemd/system`:
 
-```
+```markdown
 [Unit]
 Description=Certbot Renewal
 
@@ -275,7 +275,7 @@ Description=Certbot Renewal
 ExecStart=/usr/bin/certbot renew --force-renewal --post-hook "systemctl reload nginx.service"
 ```
 ###### Создайте файл `certbot-renewal.timer` в каталоге `/etc/systemd/system`:
-```
+```markdown
 [Unit]
 Description=Timer for Certbot Renewal
 
@@ -286,16 +286,42 @@ OnUnitActiveSec=1w
 [Install]
 WantedBy=multi-user.target
 ```
+#### Настройте автоматическую очистку сессий пользователей
+###### Создайте файл `starburger-clearsessions.service` в каталоге `/etc/systemd/system`:
+```markdown
+[Unit]
+Description=Django clearsessions
+Requires=star-burger.service
+
+[Service]
+User=root
+Group=root
+WorkingDirectory=/opt/star-burger/
+ExecStart=/opt/star-burger/venv/bin/python3 manage.py clearsessions
+```
+###### Создайте файл `starburger-clearsessions.timer` в каталоге `/etc/systemd/system`:
+```markdown
+[Unit]
+Description=Timer for Django clearsessions
+
+[Timer]
+OnBootSec=300
+OnUnitActiveSec=1w
+
+[Install]
+WantedBy=multi-user.target
+```
 
 
-#### Настройте Nginx 
+
+#### Настройте Nginx
 ###### Перейдите в каталог /etc/nginx/sites-enabled:
 ```sh
 cd /etc/nginx/sites-enabled
 ```
 ###### Удалите в этом каталоге все файлы и создайте файл `starburger` следующего содержания:
 
-```
+```markdown
 server {
      server_name starburger-serg.ru www.starburger-serg.ru;
      listen 80;
@@ -310,7 +336,7 @@ server {
 }
 
 server {
-     server_name starburger-serg.ru www.starburger-serg.ru;     
+     server_name starburger-serg.ru www.starburger-serg.ru;
      listen 443 ssl;
      ssl_certificate /etc/letsencrypt/live/starburger-serg.ru/fullchain.pem;
      ssl_certificate_key /etc/letsencrypt/live/starburger-serg.ru/privkey.pem;
@@ -334,9 +360,11 @@ server {
 
 ```
 #### Выполните команды для запуска демонов:
-```
-systemctl enable star-burger
+```commandline
 systemctl start star-burger
+systemctl enable star-burger
+systemctl start certbot-renewal
+systemctl start starburger-clearsessions
 nginx -s reload
 ```
 После успешного выполнения указанных действий сайт будет доступен по ссылке:
